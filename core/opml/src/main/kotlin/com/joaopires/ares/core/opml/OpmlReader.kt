@@ -2,10 +2,14 @@
 
 package com.joaopires.ares.core.opml
 
+import com.joaopires.ares.core.xml.LimitExceededException
+import com.joaopires.ares.core.xml.LimitedInputStream
+import com.joaopires.ares.core.xml.decodeEntities
+import com.joaopires.ares.core.xml.defineHtmlEntities
+import com.joaopires.ares.core.xml.isLimitExceeded
+import com.joaopires.ares.core.xml.parseDate
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserException
-import java.io.FilterInputStream
-import java.io.IOException
 import java.io.InputStream
 
 public class OpmlReader(
@@ -17,14 +21,12 @@ public class OpmlReader(
         val parser = newParser()
         try {
             parser.setInput(LimitedInputStream(input, limits.maxBytes), null)
-            htmlEntities.forEach { (name, value) ->
-                if (name !in xmlBuiltInEntities) parser.defineEntityReplacementText(name, value)
-            }
+            parser.defineHtmlEntities()
             return readDocument(parser)
         } catch (_: LimitExceededException) {
             throw OpmlException.TooLarge(OpmlException.TooLarge.Limit.Bytes)
         } catch (e: XmlPullParserException) {
-            if (e.detail is LimitExceededException || e.cause is LimitExceededException) {
+            if (e.isLimitExceeded()) {
                 throw OpmlException.TooLarge(OpmlException.TooLarge.Limit.Bytes)
             }
             throw OpmlException.Malformed(e.lineNumber, e.columnNumber, e.message ?: "invalid XML", e)
@@ -118,28 +120,5 @@ public class OpmlReader(
                 return OutlineBuilder(attributes)
             }
         }
-    }
-}
-
-private class LimitExceededException : IOException("input limit exceeded")
-
-private class LimitedInputStream(input: InputStream, private val limit: Long) : FilterInputStream(input) {
-    private var count = 0L
-
-    override fun read(): Int {
-        val value = super.read()
-        if (value >= 0) add(1)
-        return value
-    }
-
-    override fun read(buffer: ByteArray, offset: Int, length: Int): Int {
-        val read = super.read(buffer, offset, length)
-        if (read > 0) add(read.toLong())
-        return read
-    }
-
-    private fun add(bytes: Long) {
-        count += bytes
-        if (count > limit) throw LimitExceededException()
     }
 }

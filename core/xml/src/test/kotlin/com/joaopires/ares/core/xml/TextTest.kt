@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package com.joaopires.ares.core.opml
+package com.joaopires.ares.core.xml
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

@@ -2,6 +2,8 @@
 
 package com.joaopires.ares.core.opml
 
+import com.joaopires.ares.core.xml.formatRfc822
+import com.joaopires.ares.core.xml.stripInvalidXmlChars
 import org.xmlpull.v1.XmlSerializer
 import java.io.OutputStream
 

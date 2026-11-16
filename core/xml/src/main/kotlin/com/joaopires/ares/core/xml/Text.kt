@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package com.joaopires.ares.core.opml
+package com.joaopires.ares.core.xml
 
 import java.time.Instant
 import java.time.OffsetDateTime
@@ -11,7 +11,7 @@ private const val MAX_DECODE_PASSES = 3
 
 private val entityPattern = Regex("&(#[0-9]{1,7}|#[xX][0-9a-fA-F]{1,6}|[A-Za-z][A-Za-z0-9]{1,31});")
 
-internal fun decodeEntities(value: String): String {
+public fun decodeEntities(value: String): String {
     var current = value
     repeat(MAX_DECODE_PASSES) {
         if ('&' !in current) return current
@@ -32,7 +32,7 @@ internal fun decodeEntities(value: String): String {
 private fun codePoint(value: Int): String? =
     if (value in 1..0x10FFFF && value !in 0xD800..0xDFFF) String(Character.toChars(value)) else null
 
-internal fun stripInvalidXmlChars(value: String): String {
+public fun stripInvalidXmlChars(value: String): String {
     if (value.all { isValidXmlChar(it) }) return value
     val builder = StringBuilder(value.length)
     var index = 0
@@ -52,10 +52,10 @@ internal fun stripInvalidXmlChars(value: String): String {
 private fun isValidXmlChar(char: Char): Boolean =
     char == '\t' || char == '\n' || char == '\r' || char in ' '..'�'
 
-internal fun formatRfc822(instant: Instant): String =
+public fun formatRfc822(instant: Instant): String =
     DateTimeFormatter.RFC_1123_DATE_TIME.format(instant.atOffset(ZoneOffset.UTC))
 
-internal fun parseDate(value: String): Instant? {
+public fun parseDate(value: String): Instant? {
     val trimmed = value.trim()
     if (trimmed.isEmpty()) return null
     return try {

@@ -28,6 +28,7 @@ tasks.test {
 }
 
 dependencies {
+    implementation(project(":core:xml"))
     compileOnly(libs.xmlpull)
     testImplementation(libs.junit)
     testImplementation(libs.kxml2)

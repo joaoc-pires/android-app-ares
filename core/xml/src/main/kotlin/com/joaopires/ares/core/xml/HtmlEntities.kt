@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package com.joaopires.ares.core.opml
+package com.joaopires.ares.core.xml
 
-internal val xmlBuiltInEntities: Set<String> = setOf("amp", "lt", "gt", "quot", "apos")
+public val xmlBuiltInEntities: Set<String> = setOf("amp", "lt", "gt", "quot", "apos")
 
-internal val htmlEntities: Map<String, String> = mapOf(
+public val htmlEntities: Map<String, String> = mapOf(
     "AElig" to "\u00C6",
     "Aacute" to "\u00C1",
     "Acirc" to "\u00C2",
