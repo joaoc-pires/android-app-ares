@@ -1,0 +1,34 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+plugins {
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.android.lint)
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+kotlin {
+    explicitApi()
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
+    }
+}
+
+lint {
+    disable += "AndroidGradlePluginVersion"
+}
+
+tasks.test {
+    useJUnit()
+}
+
+dependencies {
+    compileOnly(libs.xmlpull)
+    testImplementation(libs.junit)
+    testImplementation(libs.kxml2)
+}

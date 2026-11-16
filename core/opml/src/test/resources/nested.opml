@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head><title>Nested</title></head>
+  <body>
+    <outline text="Tech">
+      <outline text="Tech Top" type="rss" xmlUrl="https://top.example/feed"/>
+      <outline text="Android">
+        <outline text="Android Blog" type="rss" xmlUrl="https://android.example/feed"/>
+        <outline text="Kotlin">
+          <outline text="Kotlin Weekly" type="rss" xmlUrl="https://kotlin.example/feed"/>
+        </outline>
+      </outline>
+    </outline>
+  </body>
+</opml>
