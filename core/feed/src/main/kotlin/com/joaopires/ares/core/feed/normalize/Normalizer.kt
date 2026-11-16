@@ -55,6 +55,7 @@ private fun normalizeItem(item: RawItem, feedBase: String, siteUrl: String?, fee
         title = title,
         author = item.authors.map { cleanTitle(it, isHtml = true) }.filter { it.isNotEmpty() }.distinct().joinToString(", ").ifEmpty { null },
         contentHtml = clean?.html?.ifBlank { null },
+        contentText = clean?.text?.ifEmpty { null },
         excerpt = clean?.text?.let(::excerpt)?.ifEmpty { null },
         publishedAt = published,
         updatedAt = updated,

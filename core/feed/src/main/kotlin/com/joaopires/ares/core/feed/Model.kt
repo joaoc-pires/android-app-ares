@@ -20,6 +20,7 @@ public data class Entry(
     val title: String?,
     val author: String?,
     val contentHtml: String?,
+    val contentText: String?,
     val excerpt: String?,
     val publishedAt: Instant?,
     val updatedAt: Instant?,

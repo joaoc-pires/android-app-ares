@@ -72,6 +72,8 @@ class ParsingTest {
             first.thumbnail,
         )
         assertTrue(first.excerpt!!.startsWith("Intro text. Body with relative link."))
+        assertTrue(first.contentText!!.startsWith("Intro text. Body with relative link."))
+        assertTrue(first.excerpt!!.length <= first.contentText!!.length)
         assertNull(first.videoId)
 
         val second = feed.entries[1]
@@ -106,6 +108,7 @@ class ParsingTest {
 
         val three = feed.entries[2]
         assertNull(three.contentHtml)
+        assertNull(three.contentText)
         assertNull(three.excerpt)
     }
 
