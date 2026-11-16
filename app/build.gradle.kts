@@ -38,6 +38,9 @@ android {
         includeInApk = false
         includeInBundle = false
     }
+    lint {
+        disable += "AndroidGradlePluginVersion"
+    }
 }
 
 dependencies {
