@@ -2,11 +2,6 @@
 
 package com.joaopires.ares.core.xml
 
-import java.time.Instant
-import java.time.OffsetDateTime
-import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
-
 private const val MAX_DECODE_PASSES = 3
 
 private val entityPattern = Regex("&(#[0-9]{1,7}|#[xX][0-9a-fA-F]{1,6}|[A-Za-z][A-Za-z0-9]{1,31});")
@@ -50,21 +45,4 @@ public fun stripInvalidXmlChars(value: String): String {
 }
 
 private fun isValidXmlChar(char: Char): Boolean =
-    char == '\t' || char == '\n' || char == '\r' || char in ' '..'�'
-
-public fun formatRfc822(instant: Instant): String =
-    DateTimeFormatter.RFC_1123_DATE_TIME.format(instant.atOffset(ZoneOffset.UTC))
-
-public fun parseDate(value: String): Instant? {
-    val trimmed = value.trim()
-    if (trimmed.isEmpty()) return null
-    return try {
-        OffsetDateTime.parse(trimmed, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant()
-    } catch (_: Exception) {
-        try {
-            OffsetDateTime.parse(trimmed).toInstant()
-        } catch (_: Exception) {
-            null
-        }
-    }
-}
+    char == '\t' || char == '\n' || char == '\r' || char in ' '..'\uFFFD'

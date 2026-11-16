@@ -28,3 +28,4 @@ rootProject.name = "Ares"
 include(":app")
 include(":core:opml")
 include(":core:xml")
+include(":core:feed")

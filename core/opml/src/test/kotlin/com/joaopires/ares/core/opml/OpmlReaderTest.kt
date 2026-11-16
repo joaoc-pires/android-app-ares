@@ -105,28 +105,28 @@ class OpmlReaderTest {
 
     @Test
     fun keepsWholeTitleAcrossChunks() {
-        assertEquals("Tom & Jerry <Cartoons> — Feeds", read("title-chunks.opml").title)
+        assertEquals("Tom & Jerry <Cartoons> \u2014 Feeds", read("title-chunks.opml").title)
     }
 
     @Test
     fun acceptsHtmlEntities() {
         val document = read("html-entities.opml")
-        assertEquals("Café News", document.title)
-        assertEquals("Café © Crème", document.feeds().single().title)
+        assertEquals("Caf\u00E9\u00A0News", document.title)
+        assertEquals("Caf\u00E9 \u00A9 Cr\u00E8me", document.feeds().single().title)
     }
 
     @Test
     fun readsDeclaredLatin1Encoding() {
         val document = read("latin1.opml")
-        assertEquals("Olá Português", document.title)
-        assertEquals("Notícias", document.feeds().single().title)
+        assertEquals("Ol\u00E1 Portugu\u00EAs", document.title)
+        assertEquals("Not\u00EDcias", document.feeds().single().title)
     }
 
     @Test
     fun readsUtf8WithBom() {
         val document = read("bom-utf8.opml")
-        assertEquals("BOM 📰", document.title)
-        assertEquals("Jornal 📰", document.feeds().single().title)
+        assertEquals("BOM \uD83D\uDCF0", document.title)
+        assertEquals("Jornal \uD83D\uDCF0", document.feeds().single().title)
     }
 
     @Test

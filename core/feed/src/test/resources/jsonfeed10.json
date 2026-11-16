@@ -1,0 +1,1 @@
+{"version":"https://jsonfeed.org/version/1","title":"Old JSON","home_page_url":"https://oldjson.example/","author":{"name":"Solo"},"items":[{"id":"x","url":"https://oldjson.example/x","title":"X","summary":"Sum","content_text":"Body"}]}

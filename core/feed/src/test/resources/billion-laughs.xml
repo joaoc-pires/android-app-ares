@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<!DOCTYPE rss [
+ <!ENTITY a "aaaaaaaaaa">
+ <!ENTITY b1 "&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;">
+ <!ENTITY b2 "&b1;&b1;&b1;&b1;&b1;&b1;&b1;&b1;&b1;&b1;">
+ <!ENTITY b3 "&b2;&b2;&b2;&b2;&b2;&b2;&b2;&b2;&b2;&b2;">
+ <!ENTITY b4 "&b3;&b3;&b3;&b3;&b3;&b3;&b3;&b3;&b3;&b3;">
+ <!ENTITY b5 "&b4;&b4;&b4;&b4;&b4;&b4;&b4;&b4;&b4;&b4;">
+ <!ENTITY b6 "&b5;&b5;&b5;&b5;&b5;&b5;&b5;&b5;&b5;&b5;">
+ <!ENTITY b7 "&b6;&b6;&b6;&b6;&b6;&b6;&b6;&b6;&b6;&b6;">
+ <!ENTITY b8 "&b7;&b7;&b7;&b7;&b7;&b7;&b7;&b7;&b7;&b7;">
+ <!ENTITY b9 "&b8;&b8;&b8;&b8;&b8;&b8;&b8;&b8;&b8;&b8;">
+]>
+<rss version="2.0"><channel><title>&b9;</title></channel></rss>

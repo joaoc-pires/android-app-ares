@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel><title>No IDs</title><link>https://noid.example/</link>
+  <item><title>Only a title</title><description>First body</description><pubDate>not a date</pubDate></item>
+  <item><title>Another title</title><description>Second body</description></item>
+  <item><guid>dup</guid><title>Duplicate one</title></item>
+  <item><guid>dup</guid><title>Duplicate two</title></item>
+  <item><title>Future</title><link>https://noid.example/future</link><pubDate>Fri, 01 Jan 2100 00:00:00 GMT</pubDate></item>
+</channel></rss>

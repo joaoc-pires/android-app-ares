@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:base="https://atom.example/blog/">
+  <title type="text">Atom &amp; Friends</title>
+  <subtitle type="html">&lt;b&gt;All&lt;/b&gt; the news</subtitle>
+  <link rel="self" href="https://atom.example/blog/feed.atom"/>
+  <link rel="alternate" type="text/html" href="./"/>
+  <icon>/favicon.png</icon>
+  <author><name>Feed Author</name></author>
+  <id>urn:uuid:feed</id>
+  <updated>2026-11-16T10:00:00Z</updated>
+  <entry>
+    <title type="html">Entry &lt;i&gt;one&lt;/i&gt;</title>
+    <link rel="replies" href="comments/1"/>
+    <link rel="alternate" href="posts/one.html"/>
+    <id>tag:atom.example,2026:1</id>
+    <published>2026-11-16T09:00:00+01:00</published>
+    <updated>2026-11-16T09:30:00+01:00</updated>
+    <content type="xhtml" xml:base="https://atom.example/blog/posts/">
+      <div xmlns="http://www.w3.org/1999/xhtml"><p>Hello <a href="two.html">next</a> &amp; <img src="img/pic.jpg" width="800" height="400"/></p></div>
+    </content>
+  </entry>
+  <entry>
+    <title>Entry two</title>
+    <link href="posts/two.html"/>
+    <id>tag:atom.example,2026:2</id>
+    <updated>2026-11-15T12:00:00Z</updated>
+    <summary type="text">Only a &lt;summary&gt; here</summary>
+    <author><name>Guest Writer</name></author>
+  </entry>
+  <entry>
+    <title>Out of line</title>
+    <link rel="alternate" href="https://atom.example/blog/posts/three.html"/>
+    <id>tag:atom.example,2026:3</id>
+    <updated>2026-11-14T12:00:00Z</updated>
+    <content src="https://atom.example/blog/posts/three.txt" type="text/plain"/>
+  </entry>
+</feed>

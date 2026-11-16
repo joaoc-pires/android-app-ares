@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+  <title>Example &amp;amp; Blog</title>
+  <atom:link href="https://blog.example/feed/" rel="self" type="application/rss+xml"/>
+  <link>https://blog.example</link>
+  <description>Just another blog</description>
+  <item>
+    <title>Hello &lt;em&gt;World&lt;/em&gt; &amp;amp; friends</title>
+    <link>https://blog.example/2026/11/hello/</link>
+    <dc:creator><![CDATA[Ana Silva]]></dc:creator>
+    <pubDate>Mon, 16 Nov 2026 09:30:00 +0000</pubDate>
+    <guid isPermaLink="false">https://blog.example/?p=42</guid>
+    <description><![CDATA[Short summary]]></description>
+    <content:encoded><![CDATA[
+      <p>Intro <img src="https://s.w.org/images/core/emoji/15.0.3/72x72/1f600.png" alt="smile" class="emoji"> text.</p>
+      <p onclick="steal()" style="color:red">Body with <a href="/about" class="btn">relative link</a>.</p>
+      <figure><img src="/wp-content/uploads/2026/11/hero-1200x630.jpg" alt="Hero"></figure>
+      <img src="http://images.example/inline.png" srcset="/small.png 1x, /large.png 2x" width="640" height="480">
+      <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" width="560" height="315"></iframe>
+      <script>alert(1)</script>
+      <img src="https://pixel.wp.com/g.gif?blog=1" width="1" height="1">
+      <img src="https://cdn.example/track.gif" width="1" height="1">
+      <div class="feedflare"><a href="https://feeds.feedburner.com/~ff/Example?a=1">flare</a></div>
+    ]]></content:encoded>
+  </item>
+  <item>
+    <title>Second post</title>
+    <link>https://blog.example/2026/11/second/</link>
+    <dc:creator>Ana Silva</dc:creator>
+    <dc:creator>Rui Costa</dc:creator>
+    <pubDate>Sun, 15 Nov 2026 08:00:00 GMT</pubDate>
+    <guid isPermaLink="true">https://blog.example/2026/11/second/</guid>
+    <description>Plain &amp; simple</description>
+  </item>
+</channel>
+</rss>

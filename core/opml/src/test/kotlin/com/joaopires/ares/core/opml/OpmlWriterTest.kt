@@ -25,10 +25,10 @@ class OpmlWriterTest {
     fun roundTripsFeedsWithSections() {
         val feeds = listOf(
             OpmlFeed("https://a.example/feed", "Apples & Pears", "https://a.example/", null),
-            OpmlFeed("https://z.example/feed?x=1&y=<2>", "zebra \"quoted\" 🦓", null, null),
+            OpmlFeed("https://z.example/feed?x=1&y=<2>", "zebra \"quoted\" \uD83E\uDD93", null, null),
             OpmlFeed("https://k.example/feed", "Kotlin", "https://k.example/", "Android"),
             OpmlFeed("https://c.example/feed", "Compose", null, "Android"),
-            OpmlFeed("https://n.example/feed", "News", null, "Écoles & Co"),
+            OpmlFeed("https://n.example/feed", "News", null, "\u00C9coles & Co"),
         )
         val document = OpmlDocument.of("Ares", feeds, now)
 
