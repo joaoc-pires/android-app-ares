@@ -2,7 +2,7 @@
 .gradle/
 .kotlin/
 /local.properties
-/build
+build/
 /captures
 .externalNativeBuild
 .cxx

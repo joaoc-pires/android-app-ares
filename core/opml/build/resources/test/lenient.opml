@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<OPML>
-  <HEAD><TITLE>Lenient</TITLE></HEAD>
-  <BODY>
-    <OUTLINE TITLE="Title Only" TYPE="rss" XMLURL="https://titleonly.example/feed"/>
-    <outline text="Url Attribute" type="atom" url="https://urlattr.example/atom"/>
-    <outline text="Not a feed url" type="link" url="https://link.example/"/>
-  </BODY>
-</OPML>
