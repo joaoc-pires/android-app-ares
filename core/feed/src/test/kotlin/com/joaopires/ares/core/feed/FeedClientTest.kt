@@ -72,6 +72,9 @@ class FeedClientTest {
 
     private fun url(path: String) = server.url(path).toString()
 
+    private fun nextRequest(): RecordedRequest =
+        requireNotNull(server.takeRequest(5, TimeUnit.SECONDS)) { "the server received no request" }
+
     @Test
     fun fetchesAndParsesAFeed() = runBlocking {
         server.enqueue(MockResponse.Builder().code(200).body(rss).addHeader("ETag", "\"v1\"").addHeader("Last-Modified", "Mon, 16 Nov 2026 10:00:00 GMT").build())
@@ -85,8 +88,8 @@ class FeedClientTest {
     @Test
     fun sendsHonestHeaders() = runBlocking {
         server.enqueue(ok())
-        client().fetch(url("/feed"))
-        val request = server.takeRequest()
+        assertTrue(client().fetch(url("/feed")) is FetchOutcome.Updated)
+        val request = nextRequest()
         assertEquals("Ares/9.9.9 (+https://joaopires.com/ares)", request.headers["User-Agent"])
         assertTrue(request.headers["Accept"]!!.startsWith("application/rss+xml"))
     }
@@ -96,7 +99,7 @@ class FeedClientTest {
         server.enqueue(MockResponse.Builder().code(304).build())
         val outcome = client().fetch(url("/feed"), Validators("\"v1\"", "Mon, 16 Nov 2026 10:00:00 GMT"))
         assertEquals(FetchOutcome.NotModified(null), outcome)
-        val request = server.takeRequest()
+        val request = nextRequest()
         assertEquals("\"v1\"", request.headers["If-None-Match"])
         assertEquals("Mon, 16 Nov 2026 10:00:00 GMT", request.headers["If-Modified-Since"])
     }
@@ -143,7 +146,7 @@ class FeedClientTest {
         server.enqueue(ok())
         val outcome = client().fetch(url("/feed").replaceFirst("https://", "http://")) as FetchOutcome.Updated
         assertEquals(url("/feed"), outcome.newUrl)
-        assertEquals("https", server.takeRequest().url.scheme)
+        assertEquals("https", nextRequest().url.scheme)
     }
 
     @Test
@@ -200,10 +203,10 @@ class FeedClientTest {
         server.enqueue(MockResponse.Builder().code(200).body(rss).addHeader("Set-Cookie", "session=abc; Path=/").build())
         server.enqueue(ok())
         val client = client()
-        client.fetch(url("/feed"))
-        client.fetch(url("/feed"))
-        server.takeRequest()
-        assertNull(server.takeRequest().headers["Cookie"])
+        assertTrue(client.fetch(url("/feed")) is FetchOutcome.Updated)
+        assertTrue(client.fetch(url("/feed")) is FetchOutcome.Updated)
+        nextRequest()
+        assertNull(nextRequest().headers["Cookie"])
     }
 
     @Test

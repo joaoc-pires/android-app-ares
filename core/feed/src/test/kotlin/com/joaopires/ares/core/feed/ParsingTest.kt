@@ -73,7 +73,7 @@ class ParsingTest {
         )
         assertTrue(first.excerpt!!.startsWith("Intro text. Body with relative link."))
         assertTrue(first.contentText!!.startsWith("Intro text. Body with relative link."))
-        assertTrue(first.excerpt!!.length <= first.contentText!!.length)
+        assertTrue(first.excerpt.length <= first.contentText.length)
         assertNull(first.videoId)
 
         val second = feed.entries[1]
@@ -96,7 +96,7 @@ class ParsingTest {
         assertEquals(Instant.parse("2026-11-16T08:00:00Z"), one.publishedAt)
         assertEquals(Instant.parse("2026-11-16T08:30:00Z"), one.updatedAt)
         assertTrue(one.contentHtml!!.contains("href=\"https://atom.example/blog/posts/two.html\""))
-        assertTrue(one.contentHtml!!.contains("&amp;"))
+        assertTrue(one.contentHtml.contains("&amp;"))
         assertEquals(Thumbnail("https://atom.example/blog/posts/img/pic.jpg", 800, 400), one.thumbnail)
 
         val two = feed.entries[1]

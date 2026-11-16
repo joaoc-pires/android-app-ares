@@ -33,6 +33,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     dependenciesInfo {
         includeInApk = false
@@ -53,6 +54,8 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.materialkolor.color.utilities)
+    implementation(project(":core:data"))
+    implementation(libs.kotlinx.coroutines.core)
     testImplementation(libs.junit)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }
