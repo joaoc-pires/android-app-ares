@@ -193,11 +193,21 @@ class RepositoryTest {
         val section = feeds.createSection("S")!!
         val a = subscribe(feed("https://a.example/feed", entry("a1"), entry("a2")), sectionId = section)
         subscribe(feed("https://b.example/feed", entry("b1", publishedAt = NOW.minus(Duration.ofDays(5)))))
-        assertEquals(2, entries.markAllRead(EntryScope.Feed(a)))
+        assertEquals(setOf("a1", "a2"), entries.markAllRead(EntryScope.Feed(a)).toSet())
         assertEquals(listOf("b1"), ids(EntryQuery(EntryScope.Unread)))
-        assertEquals(0, entries.markAllRead(EntryScope.Today))
-        assertEquals(1, entries.markAllRead(EntryScope.All))
+        assertTrue(entries.markAllRead(EntryScope.Today).isEmpty())
+        assertEquals(listOf("b1"), entries.markAllRead(EntryScope.All))
         assertTrue(ids(EntryQuery(EntryScope.Unread)).isEmpty())
+    }
+
+    @Test
+    fun markAllReadCanBeUndone() = runBlocking {
+        subscribe(feed("https://a.example/feed", entry("a"), entry("b"), entry("c")))
+        entries.setRead("c", true)
+        val marked = entries.markAllRead(EntryScope.All)
+        assertEquals(setOf("a", "b"), marked.toSet())
+        entries.markUnread(marked)
+        assertEquals(setOf("a", "b"), ids(EntryQuery(EntryScope.Unread)).toSet())
     }
 
     @Test

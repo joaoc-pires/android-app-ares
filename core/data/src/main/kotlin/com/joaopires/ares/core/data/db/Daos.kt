@@ -160,20 +160,23 @@ internal interface EntryDao {
     @Query("DELETE FROM entries WHERE id = :id AND feedId IS NULL AND isBookmarked = 0")
     suspend fun deleteIfOrphan(id: String)
 
-    @Query("UPDATE entries SET isRead = 1 WHERE isRead = 0")
-    suspend fun markAllRead(): Int
+    @Query("SELECT id FROM entries WHERE isRead = 0")
+    suspend fun unreadIds(): List<String>
 
-    @Query("UPDATE entries SET isRead = 1 WHERE isRead = 0 AND feedId = :feedId")
-    suspend fun markFeedRead(feedId: Long): Int
+    @Query("SELECT id FROM entries WHERE isRead = 0 AND feedId = :feedId")
+    suspend fun unreadIdsInFeed(feedId: Long): List<String>
 
-    @Query("UPDATE entries SET isRead = 1 WHERE isRead = 0 AND feedId IN (SELECT id FROM feeds WHERE sectionId = :sectionId)")
-    suspend fun markSectionRead(sectionId: Long): Int
+    @Query("SELECT id FROM entries WHERE isRead = 0 AND feedId IN (SELECT id FROM feeds WHERE sectionId = :sectionId)")
+    suspend fun unreadIdsInSection(sectionId: Long): List<String>
 
-    @Query("UPDATE entries SET isRead = 1 WHERE isRead = 0 AND sortDate >= :since")
-    suspend fun markTodayRead(since: Instant): Int
+    @Query("SELECT id FROM entries WHERE isRead = 0 AND sortDate >= :since")
+    suspend fun unreadIdsSince(since: Instant): List<String>
 
-    @Query("UPDATE entries SET isRead = 1 WHERE isRead = 0 AND isBookmarked = 1")
-    suspend fun markBookmarksRead(): Int
+    @Query("SELECT id FROM entries WHERE isRead = 0 AND isBookmarked = 1")
+    suspend fun unreadBookmarkIds(): List<String>
+
+    @Query("UPDATE entries SET isRead = :read WHERE id IN (:ids)")
+    suspend fun setReadMany(ids: List<String>, read: Boolean)
 
     @Query("UPDATE entries SET feedTitleSnapshot = :title, feedIconSnapshot = :iconUrl WHERE feedId = :feedId AND isBookmarked = 1")
     suspend fun snapshotBookmarks(feedId: Long, title: String?, iconUrl: String?)

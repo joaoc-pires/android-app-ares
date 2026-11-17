@@ -25,6 +25,7 @@ import java.time.Duration
 import java.time.Instant
 
 private const val PAGE_SIZE = 30
+private const val SQL_BATCH = 500
 private const val COUNTS_REFRESH_MILLIS = 60_000L
 private val TOMBSTONE_LIFETIME: Duration = Duration.ofDays(365)
 
@@ -59,12 +60,21 @@ public class EntryRepository(private val db: AresDatabase, private val clock: Cl
         }
     }
 
-    public suspend fun markAllRead(scope: EntryScope): Int = when (scope) {
-        EntryScope.All, EntryScope.Unread -> db.entryDao().markAllRead()
-        EntryScope.Today -> db.entryDao().markTodayRead(todayStart(clock.instant()))
-        EntryScope.Bookmarks -> db.entryDao().markBookmarksRead()
-        is EntryScope.Feed -> db.entryDao().markFeedRead(scope.feedId)
-        is EntryScope.Section -> db.entryDao().markSectionRead(scope.sectionId)
+    public suspend fun markAllRead(scope: EntryScope): List<String> = db.withTransaction {
+        val dao = db.entryDao()
+        val ids = when (scope) {
+            EntryScope.All, EntryScope.Unread -> dao.unreadIds()
+            EntryScope.Today -> dao.unreadIdsSince(todayStart(clock.instant()))
+            EntryScope.Bookmarks -> dao.unreadBookmarkIds()
+            is EntryScope.Feed -> dao.unreadIdsInFeed(scope.feedId)
+            is EntryScope.Section -> dao.unreadIdsInSection(scope.sectionId)
+        }
+        ids.chunked(SQL_BATCH).forEach { dao.setReadMany(it, true) }
+        ids
+    }
+
+    public suspend fun markUnread(entryIds: List<String>) {
+        db.withTransaction { entryIds.chunked(SQL_BATCH).forEach { db.entryDao().setReadMany(it, false) } }
     }
 
     public suspend fun applyRetention(retentionDays: Int?): Int = applyRetention(db, retentionDays, clock.instant())
