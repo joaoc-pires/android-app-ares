@@ -261,4 +261,16 @@ class FeedClientTest {
         route("/" to ok(String(fixtureBytes("html-page.html"))))
         assertEquals(DiscoveryOutcome.NothingFound, client().discover(url("/")))
     }
+
+    @Test
+    fun unexpectedParserErrorsBecomeFailuresInsteadOfCrashes() = runBlocking {
+        server.enqueue(ok())
+        val brokenParser = {
+            object : KXmlParser() {
+                override fun setInput(input: java.io.InputStream?, encoding: String?): Unit = throw IllegalStateException("parser bug")
+            }
+        }
+        val client = FeedClient(FeedClientConfig(appVersion = "1"), brokenParser, Clock.fixed(NOW, ZoneOffset.UTC), trustingClient)
+        assertEquals(FetchOutcome.Failed(FetchFailure.Malformed), client.fetch(url("/feed")))
+    }
 }

@@ -2,10 +2,7 @@
 
 package com.joaopires.ares.core.feed
 
-import com.joaopires.ares.core.feed.normalize.normalize
-import com.joaopires.ares.core.feed.parse.FeedParseException
 import com.joaopires.ares.core.feed.parse.decodeText
-import com.joaopires.ares.core.feed.parse.parseRawFeed
 import com.joaopires.ares.core.xml.LimitExceededException
 import com.joaopires.ares.core.xml.LimitedInputStream
 import kotlinx.coroutines.Dispatchers
@@ -105,9 +102,18 @@ public class FeedClient internal constructor(
 
     private suspend fun parse(download: Download.Body, feedKey: String): Parsed = withContext(Dispatchers.Default) {
         try {
-            val raw = parseRawFeed(download.bytes, download.charset, newParser)
-            Parsed.Ok(normalize(raw, download.feedUrl, download.finalUrl, feedKey, clock.instant()))
-        } catch (e: FeedParseException) {
+            Parsed.Ok(
+                parseFeedDocument(
+                    bytes = download.bytes,
+                    url = download.feedUrl,
+                    newParser = newParser,
+                    now = clock.instant(),
+                    charset = download.charset,
+                    documentUrl = download.finalUrl,
+                    feedKey = feedKey,
+                ),
+            )
+        } catch (e: FeedParseError) {
             Parsed.Error(e.failure)
         }
     }

@@ -8,6 +8,7 @@ import com.joaopires.ares.core.xml.decodeEntities
 import com.joaopires.ares.core.xml.defineHtmlEntities
 import com.joaopires.ares.core.xml.isLimitExceeded
 import com.joaopires.ares.core.xml.parseDate
+import com.joaopires.ares.core.xml.prepareForUntrustedInput
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserException
 import java.io.InputStream
@@ -20,6 +21,7 @@ public class OpmlReader(
     public fun read(input: InputStream): OpmlDocument {
         val parser = newParser()
         try {
+            parser.prepareForUntrustedInput(processNamespaces = false)
             parser.setInput(LimitedInputStream(input, limits.maxBytes), null)
             parser.defineHtmlEntities()
             return readDocument(parser)
@@ -30,6 +32,8 @@ public class OpmlReader(
                 throw OpmlException.TooLarge(OpmlException.TooLarge.Limit.Bytes)
             }
             throw OpmlException.Malformed(e.lineNumber, e.columnNumber, e.message ?: "invalid XML", e)
+        } catch (e: RuntimeException) {
+            throw OpmlException.Malformed(parser.lineNumber, parser.columnNumber, e.message ?: "unexpected parser error", e)
         }
     }
 

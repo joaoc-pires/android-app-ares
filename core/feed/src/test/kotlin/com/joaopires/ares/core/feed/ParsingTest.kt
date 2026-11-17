@@ -252,4 +252,18 @@ class ParsingTest {
     fun utf16() {
         assertEquals("UTF-16 \u00E7\u00E3o", parseFixture("utf16.xml", "https://u16.example/feed").title)
     }
+
+    @Test
+    fun feedpressStyleFeedWithStylesheetAndHtmlEntities() {
+        val feed = parseFixture("feedpress-style.xml", "https://feedpress.example/colors")
+        assertEquals("Many Colours", feed.title)
+        assertEquals("Technology & culture", feed.description)
+        assertEquals(2, feed.entries.size)
+        val first = feed.entries[0]
+        assertEquals("Hands-on with the new laptop\u2019s display", first.title)
+        assertEquals("Writer One", first.author)
+        assertEquals(Instant.parse("2026-11-16T10:15:03Z"), first.publishedAt)
+        assertEquals(Thumbnail("https://colours.example/img/laptop.jpg", 1200, 675), first.thumbnail)
+        assertEquals("Podcast \u2013 Episode 400", feed.entries[1].title)
+    }
 }

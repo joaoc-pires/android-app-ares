@@ -189,4 +189,14 @@ class ViewModelTest {
         viewModel.markAllRead()
         assertEquals(EntriesMessage.MarkedRead(emptyList()), withTimeout(WAIT_MILLIS) { viewModel.messages.first() })
     }
+
+    @Test
+    fun unexpectedErrorsWhileAddingAFeedAreShownNotThrown() = runBlocking<Unit> {
+        source.onDiscover = { throw IllegalStateException("parser bug") }
+        val viewModel = home()
+        viewModel.showAddFeed()
+        viewModel.onAddFeedUrlChanged("broken.example")
+        viewModel.submitAddFeed()
+        assertEquals(AddFeedState.Editing("broken.example", AddFeedError.Fetch(FetchFailure.Malformed)), viewModel.addFeed.value)
+    }
 }

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" media="screen" href="/~files/feed-premium.xsl"?>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:feedpress="https://feed.press/xmlns">
+  <channel>
+    <feedpress:locale>en</feedpress:locale>
+    <atom:link rel="self" href="https://feedpress.example/colors"/>
+    <title>Many&nbsp;Colours</title>
+    <link>https://colours.example</link>
+    <description>Technology &amp; culture</description>
+    <item>
+      <title>Hands-on with the new laptop&#8217;s display</title>
+      <link>https://colours.example/2026/11/laptop/</link>
+      <guid isPermaLink="false">https://colours.example/?p=1001</guid>
+      <dc:creator>Writer One</dc:creator>
+      <pubDate>Mon, 16 Nov 2026 05:15:03 -0500</pubDate>
+      <description>Short&nbsp;summary &copy; 2026</description>
+      <content:encoded><![CDATA[<p>It&rsquo;s bright.</p><p><img src="https://colours.example/img/laptop.jpg" width="1200" height="675" alt=""></p>]]></content:encoded>
+    </item>
+    <item>
+      <title>Podcast &#8211; Episode 400</title>
+      <link>https://colours.example/2026/11/podcast-400/</link>
+      <guid isPermaLink="false">https://colours.example/?p=1002</guid>
+      <dc:creator>Writer Two</dc:creator>
+      <pubDate>Sun, 15 Nov 2026 09:00:00 -0500</pubDate>
+      <content:encoded><![CDATA[<p>Show notes.</p>]]></content:encoded>
+    </item>
+  </channel>
+</rss>

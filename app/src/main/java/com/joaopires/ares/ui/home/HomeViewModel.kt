@@ -20,6 +20,7 @@ import com.joaopires.ares.core.feed.Feed
 import com.joaopires.ares.core.feed.FetchFailure
 import com.joaopires.ares.core.feed.FetchOutcome
 import com.joaopires.ares.core.feed.Validators
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -154,11 +155,13 @@ class HomeViewModel(
         }
         addFeedState.value = AddFeedState.Loading(current.url)
         viewModelScope.launch {
-            when (val outcome = source.discover(url)) {
-                is DiscoveryOutcome.Found -> subscribe(outcome.feed, outcome.validators)
-                is DiscoveryOutcome.Candidates -> addFeedState.value = AddFeedState.Choosing(current.url, outcome.feeds)
-                DiscoveryOutcome.NothingFound -> addFeedState.value = current.copy(error = AddFeedError.Fetch(FetchFailure.NotAFeed))
-                is DiscoveryOutcome.Failed -> addFeedState.value = current.copy(error = AddFeedError.Fetch(outcome.failure))
+            guarded(onError = { addFeedState.value = current.copy(error = AddFeedError.Fetch(FetchFailure.Malformed)) }) {
+                when (val outcome = source.discover(url)) {
+                    is DiscoveryOutcome.Found -> subscribe(outcome.feed, outcome.validators)
+                    is DiscoveryOutcome.Candidates -> addFeedState.value = AddFeedState.Choosing(current.url, outcome.feeds)
+                    DiscoveryOutcome.NothingFound -> addFeedState.value = current.copy(error = AddFeedError.Fetch(FetchFailure.NotAFeed))
+                    is DiscoveryOutcome.Failed -> addFeedState.value = current.copy(error = AddFeedError.Fetch(outcome.failure))
+                }
             }
         }
     }
@@ -167,12 +170,24 @@ class HomeViewModel(
         val current = addFeedState.value as? AddFeedState.Choosing ?: return
         addFeedState.value = AddFeedState.Loading(current.url)
         viewModelScope.launch {
-            when (val outcome = source.fetch(candidate.url, null, candidate.url)) {
-                is FetchOutcome.Updated -> subscribe(outcome.feed, outcome.validators)
-                is FetchOutcome.Failed -> addFeedState.value = AddFeedState.Editing(current.url, AddFeedError.Fetch(outcome.failure))
-                FetchOutcome.Gone -> addFeedState.value = AddFeedState.Editing(current.url, AddFeedError.Fetch(FetchFailure.Http(410)))
-                is FetchOutcome.NotModified -> addFeedState.value = AddFeedState.Editing(current.url, AddFeedError.Fetch(FetchFailure.NotAFeed))
+            guarded(onError = { addFeedState.value = AddFeedState.Editing(current.url, AddFeedError.Fetch(FetchFailure.Malformed)) }) {
+                when (val outcome = source.fetch(candidate.url, null, candidate.url)) {
+                    is FetchOutcome.Updated -> subscribe(outcome.feed, outcome.validators)
+                    is FetchOutcome.Failed -> addFeedState.value = AddFeedState.Editing(current.url, AddFeedError.Fetch(outcome.failure))
+                    FetchOutcome.Gone -> addFeedState.value = AddFeedState.Editing(current.url, AddFeedError.Fetch(FetchFailure.Http(410)))
+                    is FetchOutcome.NotModified -> addFeedState.value = AddFeedState.Editing(current.url, AddFeedError.Fetch(FetchFailure.NotAFeed))
+                }
             }
+        }
+    }
+
+    private suspend fun guarded(onError: () -> Unit, block: suspend () -> Unit) {
+        try {
+            block()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            onError()
         }
     }
 

@@ -36,6 +36,11 @@ android {
         compose = true
         buildConfig = true
     }
+    sourceSets {
+        getByName("test") {
+            resources.directories += listOf("../core/feed/src/test/resources", "../core/opml/src/test/resources")
+        }
+    }
     testOptions {
         unitTests.isIncludeAndroidResources = true
         unitTests.all {
@@ -72,6 +77,7 @@ dependencies {
     implementation(libs.coil.network.okhttp)
     implementation(libs.okhttp)
     testImplementation(libs.junit)
+    testImplementation(project(":core:opml"))
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.kotlinx.coroutines.test)

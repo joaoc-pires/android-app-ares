@@ -5,6 +5,7 @@ package com.joaopires.ares.core.feed.parse
 import com.joaopires.ares.core.feed.FetchFailure
 import com.joaopires.ares.core.xml.defineHtmlEntities
 import com.joaopires.ares.core.xml.isLimitExceeded
+import com.joaopires.ares.core.xml.prepareForUntrustedInput
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserException
 import java.io.ByteArrayInputStream
@@ -85,7 +86,7 @@ internal fun parseXmlTree(
     rejectInternalSubset(bytes)
     val parser = newParser()
     try {
-        parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, true)
+        parser.prepareForUntrustedInput(processNamespaces = true)
         parser.setInput(ByteArrayInputStream(bytes), charset)
         parser.defineHtmlEntities()
         val stack = ArrayDeque<XmlElement>()

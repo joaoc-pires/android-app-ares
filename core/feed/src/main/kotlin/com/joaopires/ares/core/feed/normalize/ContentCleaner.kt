@@ -127,4 +127,6 @@ internal fun String.isEmojiImage(): Boolean = contains("s.w.org/images/core/emoj
 
 private fun Element.intAttr(name: String): Int? = attr(name).trim().removeSuffix("px").toIntOrNull()?.takeIf { it >= 0 }
 
-internal fun String.collapseWhitespace(): String = replace(Regex("\\s+"), " ").trim()
+private val whitespaceRun = Regex("[\\s\\u00A0]+")
+
+internal fun String.collapseWhitespace(): String = replace(whitespaceRun, " ").trim()
