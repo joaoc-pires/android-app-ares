@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -60,7 +59,7 @@ class RepositoryTest {
         val id = subscribe(feed("https://a.example/feed", entry("a"), entry("b"), title = "Zed"))
         subscribe(feed("https://b.example/feed", entry("c"), title = "alpha"))
         entries.setRead("a", true)
-        feeds.updateFeed(id, customTitle = "Beta", url = "https://a.example/feed", notify = true, sectionId = null)
+        feeds.updateFeed(id, customTitle = "Beta", url = "https://a.example/feed", sectionId = null, notify = true)
         val summaries = feeds.feeds.first()
         assertEquals(listOf("alpha", "Beta"), summaries.map { it.title })
         assertEquals(1, summaries[1].unreadCount)
@@ -71,8 +70,9 @@ class RepositoryTest {
     fun changingTheUrlToAnExistingFeedIsRefused() = runBlocking {
         val a = subscribe(feed("https://a.example/feed"))
         subscribe(feed("https://b.example/feed"))
-        assertFalse(feeds.updateFeed(a, null, "https://b.example/feed", false, null))
-        assertTrue(feeds.updateFeed(a, null, "https://c.example/feed", false, null))
+        assertEquals(UpdateFeedResult.UrlTaken, feeds.updateFeed(a, null, "https://b.example/feed", null))
+        assertEquals(UpdateFeedResult.Saved, feeds.updateFeed(a, null, "https://c.example/feed", null))
+        assertEquals(UpdateFeedResult.NotFound, feeds.updateFeed(999, null, "https://d.example/feed", null))
         assertNull(db.feedDao().byId(a)!!.etag)
     }
 
@@ -118,13 +118,18 @@ class RepositoryTest {
         assertNull(feeds.createSection("  tech "))
         val a = subscribe(feed("https://a.example/feed"), sectionId = section)
         val b = subscribe(feed("https://b.example/feed"))
-        feeds.setSectionFeeds(section, listOf(b))
+        assertEquals(SaveSectionResult.Saved(section), feeds.saveSection(section, "Tech", listOf(b)))
         assertNull(db.feedDao().byId(a)!!.sectionId)
         assertEquals(section, db.feedDao().byId(b)!!.sectionId)
 
         val other = feeds.createSection("News")!!
-        assertFalse(feeds.renameSection(other, "TECH"))
-        assertTrue(feeds.renameSection(other, "World"))
+        assertEquals(SaveSectionResult.NameTaken, feeds.saveSection(other, "TECH", emptyList()))
+        assertEquals(SaveSectionResult.EmptyName, feeds.saveSection(other, "  ", emptyList()))
+        assertEquals(SaveSectionResult.NotFound, feeds.saveSection(999, "Gone", emptyList()))
+        assertEquals(SaveSectionResult.Saved(other), feeds.saveSection(other, "World", emptyList()))
+        val created = feeds.saveSection(null, "Fresh", listOf(a)) as SaveSectionResult.Saved
+        assertEquals(created.sectionId, db.feedDao().byId(a)!!.sectionId)
+        feeds.deleteSection(created.sectionId)
 
         feeds.deleteSection(section)
         assertNull(db.feedDao().byId(b)!!.sectionId)

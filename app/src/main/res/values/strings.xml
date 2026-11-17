@@ -124,4 +124,54 @@
         <item quantity="other">Exported %d feeds</item>
     </plurals>
     <string name="export_failed">The OPML file could not be saved.</string>
+
+    <string name="action_save">Save</string>
+    <string name="action_feed_settings">Feed settings</string>
+    <string name="action_new_section">New section</string>
+    <string name="action_edit_section">Edit section</string>
+    <string name="action_delete_section">Delete section</string>
+    <string name="action_filters">Filters</string>
+    <string name="action_try_again">Try again</string>
+    <string name="action_delete_feed">Delete feed</string>
+    <string name="action_section_options">Options for %1$s</string>
+
+    <string name="feed_settings_title">Feed settings</string>
+    <string name="feed_settings_title_field">Title</string>
+    <string name="feed_settings_title_default">Leave empty to use \u201c%1$s\u201d</string>
+    <string name="feed_settings_address">Feed address</string>
+    <string name="feed_settings_last_updated">Last updated %1$s</string>
+    <string name="feed_settings_never_updated">Not updated yet</string>
+    <string name="feed_settings_gone">This feed no longer exists.</string>
+    <string name="feed_settings_url_taken">You already follow a feed at this address.</string>
+    <string name="feed_settings_checking">Checking the new address\u2026</string>
+
+    <string name="section_new_title">New section</string>
+    <string name="section_edit_title">Edit section</string>
+    <string name="section_name">Name</string>
+    <string name="section_name_taken">A section with this name already exists.</string>
+    <string name="section_name_empty">Enter a name.</string>
+    <string name="section_feeds">Feeds in this section</string>
+    <string name="section_currently_in">Currently in %1$s</string>
+    <string name="section_no_feeds">Add feeds first, then group them in sections.</string>
+    <string name="delete_section_title">Delete section?</string>
+    <string name="delete_section_body">\u201c%1$s\u201d will be removed. Its feeds are kept and moved out of the section.</string>
+    <string name="section_deleted">Deleted section \u201c%1$s\u201d</string>
+
+    <string name="filters_title">Filters</string>
+    <string name="filters_explanation">New entries whose title or text contains one of these words or phrases are not saved. Matching ignores upper and lower case. You can also apply the filters to entries you already have; bookmarked entries are never deleted.</string>
+    <string name="filters_add">Add filter</string>
+    <string name="filters_expression">Word or phrase</string>
+    <string name="filters_delete">Delete filter \u201c%1$s\u201d</string>
+    <string name="filters_empty">No filters yet.</string>
+    <string name="filters_apply">Apply to existing entries</string>
+    <string name="filters_apply_title">Delete matching entries?</string>
+    <plurals name="filters_apply_body">
+        <item quantity="one">This will delete %d entry. Bookmarks are never deleted.</item>
+        <item quantity="other">This will delete %d entries. Bookmarks are never deleted.</item>
+    </plurals>
+    <string name="filters_nothing_matches">No entries match your filters.</string>
+    <plurals name="filters_applied">
+        <item quantity="one">Deleted %d entry</item>
+        <item quantity="other">Deleted %d entries</item>
+    </plurals>
 </resources>

@@ -6,7 +6,9 @@ import androidx.room.withTransaction
 import com.joaopires.ares.core.data.db.AresDatabase
 import com.joaopires.ares.core.data.db.ExportedFeed
 import com.joaopires.ares.core.data.db.FeedEntity
+import com.joaopires.ares.core.data.db.FeedStatus
 import com.joaopires.ares.core.data.db.SectionEntity
+import com.joaopires.ares.core.data.model.FeedSettings
 import com.joaopires.ares.core.data.model.FeedSummary
 import com.joaopires.ares.core.data.model.NewEntry
 import com.joaopires.ares.core.data.model.Section
@@ -18,6 +20,15 @@ import java.time.Clock
 public sealed interface SubscribeResult {
     public data class Subscribed(val feedId: Long, val newEntries: List<NewEntry>) : SubscribeResult
     public data class AlreadySubscribed(val feedId: Long) : SubscribeResult
+}
+
+public enum class UpdateFeedResult { Saved, UrlTaken, NotFound }
+
+public sealed interface SaveSectionResult {
+    public data class Saved(val sectionId: Long) : SaveSectionResult
+    public data object EmptyName : SaveSectionResult
+    public data object NameTaken : SaveSectionResult
+    public data object NotFound : SaveSectionResult
 }
 
 public class FeedRepository(private val db: AresDatabase, private val clock: Clock) {
@@ -53,23 +64,39 @@ public class FeedRepository(private val db: AresDatabase, private val clock: Clo
         SubscribeResult.Subscribed(id, writeEntries(db, entity.copy(id = id), feed.entries, now))
     }
 
-    public suspend fun updateFeed(feedId: Long, customTitle: String?, url: String, notify: Boolean, sectionId: Long?): Boolean =
+    public fun feedSettings(feedId: Long): Flow<FeedSettings?> = db.feedDao().observeSettings(feedId)
+
+    public suspend fun sectionFeedIds(sectionId: Long): List<Long> = db.feedDao().idsInSection(sectionId)
+
+    public suspend fun updateFeed(
+        feedId: Long,
+        customTitle: String?,
+        url: String,
+        sectionId: Long?,
+        notify: Boolean? = null,
+    ): UpdateFeedResult = db.withTransaction {
+        val feed = db.feedDao().byId(feedId) ?: return@withTransaction UpdateFeedResult.NotFound
+        val newUrl = url.trim()
+        if (newUrl != feed.url && db.feedDao().byUrl(newUrl) != null) return@withTransaction UpdateFeedResult.UrlTaken
+        db.feedDao().update(
+            feed.copy(
+                customTitle = customTitle?.trim()?.ifEmpty { null },
+                url = newUrl,
+                notify = notify ?: feed.notify,
+                sectionId = sectionId,
+                etag = if (newUrl != feed.url) null else feed.etag,
+                lastModified = if (newUrl != feed.url) null else feed.lastModified,
+            ),
+        )
+        UpdateFeedResult.Saved
+    }
+
+    public suspend fun reactivate(feedId: Long) {
         db.withTransaction {
-            val feed = db.feedDao().byId(feedId) ?: return@withTransaction false
-            val newUrl = url.trim()
-            if (newUrl != feed.url && db.feedDao().byUrl(newUrl) != null) return@withTransaction false
-            db.feedDao().update(
-                feed.copy(
-                    customTitle = customTitle?.trim()?.ifEmpty { null },
-                    url = newUrl,
-                    notify = notify,
-                    sectionId = sectionId,
-                    etag = if (newUrl != feed.url) null else feed.etag,
-                    lastModified = if (newUrl != feed.url) null else feed.lastModified,
-                ),
-            )
-            true
+            val feed = db.feedDao().byId(feedId) ?: return@withTransaction
+            db.feedDao().update(feed.copy(status = FeedStatus.Active, lastError = null, consecutiveFailures = 0))
         }
+    }
 
     public suspend fun deleteFeed(feedId: Long) {
         db.withTransaction {
@@ -94,22 +121,24 @@ public class FeedRepository(private val db: AresDatabase, private val clock: Clo
         db.sectionDao().insert(SectionEntity(name = trimmed))
     }
 
-    public suspend fun renameSection(sectionId: Long, name: String): Boolean = db.withTransaction {
+    public suspend fun saveSection(sectionId: Long?, name: String, feedIds: List<Long>): SaveSectionResult = db.withTransaction {
         val trimmed = name.trim()
+        if (trimmed.isEmpty()) return@withTransaction SaveSectionResult.EmptyName
         val existing = db.sectionDao().byName(trimmed)
-        if (trimmed.isEmpty() || (existing != null && existing.id != sectionId)) return@withTransaction false
-        db.sectionDao().rename(sectionId, trimmed)
-        true
+        if (existing != null && existing.id != sectionId) return@withTransaction SaveSectionResult.NameTaken
+        val id = if (sectionId == null) {
+            db.sectionDao().insert(SectionEntity(name = trimmed))
+        } else {
+            if (db.sectionDao().rename(sectionId, trimmed) == 0) return@withTransaction SaveSectionResult.NotFound
+            sectionId
+        }
+        db.feedDao().removeFromSectionExcept(id, feedIds)
+        if (feedIds.isNotEmpty()) db.feedDao().assignSection(feedIds, id)
+        SaveSectionResult.Saved(id)
     }
 
     public suspend fun deleteSection(sectionId: Long) {
         db.sectionDao().delete(sectionId)
     }
 
-    public suspend fun setSectionFeeds(sectionId: Long, feedIds: List<Long>) {
-        db.withTransaction {
-            db.feedDao().removeFromSectionExcept(sectionId, feedIds)
-            if (feedIds.isNotEmpty()) db.feedDao().assignSection(feedIds, sectionId)
-        }
-    }
 }

@@ -58,6 +58,7 @@ sealed interface HomeMessage {
     data class RefreshFailed(val count: Int) : HomeMessage
     data class MarkedRead(val entryIds: List<String>) : HomeMessage
     data class FeedDeleted(val title: String) : HomeMessage
+    data class SectionDeleted(val name: String) : HomeMessage
     data class Subscribed(val title: String) : HomeMessage
     data object AlreadySubscribed : HomeMessage
     data class Exported(val count: Int) : HomeMessage
@@ -120,6 +121,13 @@ class HomeViewModel(
         viewModelScope.launch {
             feeds.deleteFeed(feed.id)
             messageChannel.send(HomeMessage.FeedDeleted(feed.title))
+        }
+    }
+
+    fun deleteSection(section: SectionUi) {
+        viewModelScope.launch {
+            feeds.deleteSection(section.id)
+            messageChannel.send(HomeMessage.SectionDeleted(section.name))
         }
     }
 

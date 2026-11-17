@@ -154,7 +154,7 @@ class EntryScreenTest {
         compose.waitUntil(WAIT) {
             compose.onAllNodesWithContentDescription(context.getString(R.string.action_bookmark)).fetchSemanticsNodes().isNotEmpty()
         }
-        compose.onNodeWithTag("article-webview").assertExists()
+        compose.onNodeWithTag("article-webview", useUnmergedTree = true).assertExists()
         compose.onNodeWithContentDescription(context.getString(R.string.action_full_article)).assertExists()
         compose.onNodeWithContentDescription(context.getString(R.string.action_share)).assertExists()
         compose.onNodeWithContentDescription(context.getString(R.string.action_open_original)).assertExists()

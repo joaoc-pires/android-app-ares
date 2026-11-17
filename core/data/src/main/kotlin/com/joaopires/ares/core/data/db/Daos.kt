@@ -13,6 +13,7 @@ import androidx.sqlite.db.SupportSQLiteQuery
 import com.joaopires.ares.core.data.model.EntryDetail
 import com.joaopires.ares.core.data.model.EntryEnclosure
 import com.joaopires.ares.core.data.model.EntryListItem
+import com.joaopires.ares.core.data.model.FeedSettings
 import com.joaopires.ares.core.data.model.FeedSummary
 import com.joaopires.ares.core.data.model.Filter
 import com.joaopires.ares.core.data.model.HomeCounts
@@ -58,7 +59,7 @@ internal interface SectionDao {
     suspend fun insert(section: SectionEntity): Long
 
     @Query("UPDATE sections SET name = :name WHERE id = :id")
-    suspend fun rename(id: Long, name: String)
+    suspend fun rename(id: Long, name: String): Int
 
     @Query("DELETE FROM sections WHERE id = :id")
     suspend fun delete(id: Long)
@@ -82,6 +83,17 @@ internal interface FeedDao {
 
     @Query("SELECT * FROM feeds WHERE id = :id")
     suspend fun byId(id: Long): FeedEntity?
+
+    @Query(
+        """
+        SELECT id, url, title, customTitle, siteUrl, iconUrl, sectionId, status, lastSuccessAt, lastError
+        FROM feeds WHERE id = :id
+        """,
+    )
+    fun observeSettings(id: Long): Flow<FeedSettings?>
+
+    @Query("SELECT id FROM feeds WHERE sectionId = :sectionId")
+    suspend fun idsInSection(sectionId: Long): List<Long>
 
     @Query(
         """

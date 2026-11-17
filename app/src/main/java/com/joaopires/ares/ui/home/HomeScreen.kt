@@ -81,6 +81,10 @@ fun HomeScreen(
     onSearch: () -> Unit,
     onAddFeed: () -> Unit,
     onImport: (Uri) -> Unit,
+    onFeedSettings: (Long) -> Unit,
+    onNewSection: () -> Unit,
+    onEditSection: (Long) -> Unit,
+    onFilters: () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var menuOpen by remember { mutableStateOf(false) }
@@ -91,6 +95,7 @@ fun HomeScreen(
     val snackbar = remember { SnackbarHostState() }
     val resources = LocalResources.current
     var pendingDelete by remember { mutableStateOf<FeedRowUi?>(null) }
+    var pendingSectionDelete by remember { mutableStateOf<SectionUi?>(null) }
 
     LaunchedEffect(viewModel) {
         viewModel.messages.collect { message ->
@@ -110,6 +115,7 @@ fun HomeScreen(
                     }
                 }
                 is HomeMessage.FeedDeleted -> snackbar.showSnackbar(resources.getString(R.string.feed_deleted, message.title))
+                is HomeMessage.SectionDeleted -> snackbar.showSnackbar(resources.getString(R.string.section_deleted, message.name))
                 is HomeMessage.Subscribed -> snackbar.showSnackbar(resources.getString(R.string.add_feed_subscribed, message.title))
                 HomeMessage.AlreadySubscribed -> snackbar.showSnackbar(resources.getString(R.string.add_feed_already))
                 is HomeMessage.Exported -> snackbar.showSnackbar(resources.getQuantityString(R.plurals.export_done, message.count, message.count))
@@ -143,6 +149,23 @@ fun HomeScreen(
                                 Icon(painterResource(R.drawable.ic_more_vert), contentDescription = stringResource(R.string.action_more))
                             }
                             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.action_new_section)) },
+                                    leadingIcon = { Icon(painterResource(R.drawable.ic_create_new_folder), contentDescription = null) },
+                                    onClick = {
+                                        menuOpen = false
+                                        onNewSection()
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.action_filters)) },
+                                    leadingIcon = { Icon(painterResource(R.drawable.ic_filter_list), contentDescription = null) },
+                                    onClick = {
+                                        menuOpen = false
+                                        onFilters()
+                                    },
+                                )
+                                HorizontalDivider()
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.opml_import)) },
                                     leadingIcon = { Icon(painterResource(R.drawable.ic_download), contentDescription = null) },
@@ -203,6 +226,9 @@ fun HomeScreen(
                     onOpenList = onOpenList,
                     onMarkFeedRead = viewModel::markFeedRead,
                     onDeleteFeed = { pendingDelete = it },
+                    onFeedSettings = onFeedSettings,
+                    onEditSection = onEditSection,
+                    onDeleteSection = { pendingSectionDelete = it },
                 )
             }
         }
@@ -221,6 +247,23 @@ fun HomeScreen(
             },
             dismissButton = {
                 TextButton(onClick = { pendingDelete = null }) { Text(stringResource(R.string.action_cancel)) }
+            },
+        )
+    }
+
+    pendingSectionDelete?.let { section ->
+        AlertDialog(
+            onDismissRequest = { pendingSectionDelete = null },
+            title = { Text(stringResource(R.string.delete_section_title)) },
+            text = { Text(stringResource(R.string.delete_section_body, section.name)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteSection(section)
+                    pendingSectionDelete = null
+                }) { Text(stringResource(R.string.action_delete)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingSectionDelete = null }) { Text(stringResource(R.string.action_cancel)) }
             },
         )
     }
@@ -244,7 +287,11 @@ private fun HomeList(
     onOpenList: (HomeDestination) -> Unit,
     onMarkFeedRead: (Long) -> Unit,
     onDeleteFeed: (FeedRowUi) -> Unit,
+    onFeedSettings: (Long) -> Unit,
+    onEditSection: (Long) -> Unit,
+    onDeleteSection: (SectionUi) -> Unit,
 ) {
+    val rowActions = FeedRowActions(onOpenList, onMarkFeedRead, onDeleteFeed, onFeedSettings)
     var collapsed by rememberSaveable { mutableStateOf(setOf<Long>()) }
     LazyColumn(Modifier.fillMaxSize().testTag("home-list")) {
         item(key = "smart-unread") {
@@ -267,7 +314,7 @@ private fun HomeList(
         }
         item(key = "divider") { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
         items(state.unsectioned, key = { "feed-${it.id}" }) { feed ->
-            FeedRow(feed, state.hideUnread, onOpenList, onMarkFeedRead, onDeleteFeed)
+            FeedRow(feed, state.hideUnread, rowActions)
         }
         state.sections.forEach { section ->
             val isCollapsed = section.id in collapsed
@@ -278,11 +325,13 @@ private fun HomeList(
                     hideUnread = state.hideUnread,
                     onToggle = { collapsed = if (isCollapsed) collapsed - section.id else collapsed + section.id },
                     onOpen = { onOpenList(HomeDestination.Section(section.id, section.name)) },
+                    onEdit = { onEditSection(section.id) },
+                    onDelete = { onDeleteSection(section) },
                 )
             }
             if (!isCollapsed) {
                 items(section.feeds, key = { "feed-${it.id}" }) { feed ->
-                    FeedRow(feed, state.hideUnread, onOpenList, onMarkFeedRead, onDeleteFeed)
+                    FeedRow(feed, state.hideUnread, rowActions)
                 }
             }
         }
@@ -305,7 +354,16 @@ private fun SmartListRow(icon: Int, title: String, count: Int?, countIsUnread: B
 }
 
 @Composable
-private fun SectionHeader(section: SectionUi, collapsed: Boolean, hideUnread: Boolean, onToggle: () -> Unit, onOpen: () -> Unit) {
+private fun SectionHeader(
+    section: SectionUi,
+    collapsed: Boolean,
+    hideUnread: Boolean,
+    onToggle: () -> Unit,
+    onOpen: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    var menuOpen by remember { mutableStateOf(false) }
     val toggleLabel = stringResource(if (collapsed) R.string.action_expand_section else R.string.action_collapse_section, section.name)
     ListItem(
         headlineContent = {
@@ -320,23 +378,57 @@ private fun SectionHeader(section: SectionUi, collapsed: Boolean, hideUnread: Bo
                         contentDescription = toggleLabel,
                     )
                 }
+                Box {
+                    IconButton(onClick = { menuOpen = true }, modifier = Modifier.testTag("section-menu-${section.id}")) {
+                        Icon(
+                            painterResource(R.drawable.ic_more_vert),
+                            contentDescription = stringResource(R.string.action_section_options, section.name),
+                        )
+                    }
+                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.action_edit_section)) },
+                            leadingIcon = { Icon(painterResource(R.drawable.ic_edit), contentDescription = null) },
+                            onClick = {
+                                menuOpen = false
+                                onEdit()
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.action_delete_section)) },
+                            leadingIcon = { Icon(painterResource(R.drawable.ic_delete), contentDescription = null) },
+                            onClick = {
+                                menuOpen = false
+                                onDelete()
+                            },
+                        )
+                    }
+                }
             }
         },
         modifier = Modifier.combinedClickable(onClick = onOpen),
     )
 }
 
+private class FeedRowActions(
+    val onOpenList: (HomeDestination) -> Unit,
+    val onMarkFeedRead: (Long) -> Unit,
+    val onDeleteFeed: (FeedRowUi) -> Unit,
+    val onFeedSettings: (Long) -> Unit,
+)
+
 @Composable
 private fun FeedRow(
     feed: FeedRowUi,
     hideUnread: Boolean,
-    onOpenList: (HomeDestination) -> Unit,
-    onMarkFeedRead: (Long) -> Unit,
-    onDeleteFeed: (FeedRowUi) -> Unit,
+    actions: FeedRowActions,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     val markReadLabel = stringResource(R.string.action_mark_all_read)
+    val settingsLabel = stringResource(R.string.action_feed_settings)
     val deleteLabel = stringResource(R.string.action_delete)
+    val onMarkFeedRead = actions.onMarkFeedRead
+    val onDeleteFeed = actions.onDeleteFeed
     SwipeActionBox(
         endToStart = SwipeAction(R.drawable.ic_done_all, markReadLabel) { onMarkFeedRead(feed.id) },
     ) {
@@ -359,13 +451,17 @@ private fun FeedRow(
                 },
                 modifier = Modifier
                     .combinedClickable(
-                        onClick = { onOpenList(HomeDestination.Feed(feed.id, feed.title)) },
+                        onClick = { actions.onOpenList(HomeDestination.Feed(feed.id, feed.title)) },
                         onLongClick = { menuOpen = true },
                     )
                     .semantics {
                         customActions = listOf(
                             CustomAccessibilityAction(markReadLabel) {
                                 onMarkFeedRead(feed.id)
+                                true
+                            },
+                            CustomAccessibilityAction(settingsLabel) {
+                                actions.onFeedSettings(feed.id)
                                 true
                             },
                             CustomAccessibilityAction(deleteLabel) {
@@ -383,6 +479,14 @@ private fun FeedRow(
                     onClick = {
                         menuOpen = false
                         onMarkFeedRead(feed.id)
+                    },
+                )
+                DropdownMenuItem(
+                    text = { Text(settingsLabel) },
+                    leadingIcon = { Icon(painterResource(R.drawable.ic_settings), contentDescription = null) },
+                    onClick = {
+                        menuOpen = false
+                        actions.onFeedSettings(feed.id)
                     },
                 )
                 DropdownMenuItem(

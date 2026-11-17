@@ -4,6 +4,7 @@ package com.joaopires.ares.core.data
 
 import com.joaopires.ares.core.data.db.AresDatabase
 import com.joaopires.ares.core.data.db.ExportedFeed
+import com.joaopires.ares.core.data.db.FeedStatus
 import com.joaopires.ares.core.feed.FetchFailure
 import com.joaopires.ares.core.feed.FetchOutcome
 import com.joaopires.ares.core.feed.Validators
@@ -115,5 +116,31 @@ class FeedImporterTest {
             ),
             feeds.exportList(),
         )
+    }
+}
+
+@RunWith(RobolectricTestRunner::class)
+class FeedSettingsRepositoryTest {
+
+    @Test
+    fun settingsSectionMembershipAndReactivation() = runBlocking<Unit> {
+        val db = inMemoryDatabase()
+        val feeds = FeedRepository(db, MutableClock())
+        val section = feeds.createSection("Tech")!!
+        val a = (feeds.subscribe(feed("https://a.example/feed", title = "Alpha"), Validators(null, null), sectionId = section) as SubscribeResult.Subscribed).feedId
+        val b = (feeds.subscribe(feed("https://b.example/feed"), Validators(null, null)) as SubscribeResult.Subscribed).feedId
+
+        val settings = feeds.feedSettings(a).first()!!
+        assertEquals("Alpha", settings.title)
+        assertEquals(section, settings.sectionId)
+        assertEquals(listOf(a), feeds.sectionFeedIds(section))
+
+        RefreshManager(db, FakeFeedSource { _, _, _ -> FetchOutcome.Gone }, testSettings(), MutableClock()).refreshFeed(b)
+        assertEquals(FeedStatus.Gone, feeds.feedSettings(b).first()!!.status)
+        feeds.reactivate(b)
+        val reactivated = feeds.feedSettings(b).first()!!
+        assertEquals(FeedStatus.Active, reactivated.status)
+        assertEquals(null, reactivated.lastError)
+        db.close()
     }
 }

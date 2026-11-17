@@ -21,6 +21,19 @@ public data class FeedSummary(
     val unreadCount: Int,
 )
 
+public data class FeedSettings(
+    val id: Long,
+    val url: String,
+    val title: String?,
+    val customTitle: String?,
+    val siteUrl: String?,
+    val iconUrl: String?,
+    val sectionId: Long?,
+    val status: FeedStatus,
+    val lastSuccessAt: Instant?,
+    val lastError: String?,
+)
+
 public data class EntryListItem(
     val id: String,
     val feedId: Long?,

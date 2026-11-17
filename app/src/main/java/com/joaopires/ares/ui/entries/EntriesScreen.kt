@@ -32,6 +32,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
@@ -61,7 +65,9 @@ fun EntriesScreen(
     onBack: () -> Unit,
     onSearch: () -> Unit,
     onOpenEntry: (String) -> Unit,
+    onFeedSettings: (() -> Unit)? = null,
 ) {
+    var menuOpen by remember { mutableStateOf(false) }
     val items = viewModel.items.collectAsLazyPagingItems()
     val opener by viewModel.articleOpener.collectAsStateWithLifecycle()
     val toolbarColor = MaterialTheme.colorScheme.surface.toArgb()
@@ -116,6 +122,23 @@ fun EntriesScreen(
                     }
                     IconButton(onClick = onSearch) {
                         Icon(painterResource(R.drawable.ic_search), contentDescription = stringResource(R.string.action_search))
+                    }
+                    if (onFeedSettings != null) {
+                        Box {
+                            IconButton(onClick = { menuOpen = true }) {
+                                Icon(painterResource(R.drawable.ic_more_vert), contentDescription = stringResource(R.string.action_more))
+                            }
+                            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.action_feed_settings)) },
+                                    leadingIcon = { Icon(painterResource(R.drawable.ic_settings), contentDescription = null) },
+                                    onClick = {
+                                        menuOpen = false
+                                        onFeedSettings()
+                                    },
+                                )
+                            }
+                        }
                     }
                 },
             )

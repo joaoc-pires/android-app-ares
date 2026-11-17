@@ -28,14 +28,24 @@ import com.joaopires.ares.ui.entries.EntriesViewModel
 import com.joaopires.ares.ui.home.HomeDestination
 import com.joaopires.ares.ui.home.HomeScreen
 import com.joaopires.ares.ui.home.HomeViewModel
+import com.joaopires.ares.ui.manage.FeedSettingsScreen
+import com.joaopires.ares.ui.manage.FeedSettingsViewModel
+import com.joaopires.ares.ui.manage.FiltersScreen
+import com.joaopires.ares.ui.manage.FiltersViewModel
+import com.joaopires.ares.ui.manage.SectionScreen
+import com.joaopires.ares.ui.manage.SectionViewModel
 import com.joaopires.ares.ui.navigation.AddFeedRoute
 import com.joaopires.ares.ui.navigation.EntriesRoute
 import com.joaopires.ares.ui.navigation.EntryRoute
 import com.joaopires.ares.ui.navigation.FeedPreviewRoute
+import com.joaopires.ares.ui.navigation.FeedSettingsRoute
+import com.joaopires.ares.ui.navigation.FiltersRoute
 import com.joaopires.ares.ui.navigation.HomeRoute
 import com.joaopires.ares.ui.navigation.ImportRoute
+import com.joaopires.ares.ui.navigation.NEW_SECTION
 import com.joaopires.ares.ui.navigation.ScopeKind
 import com.joaopires.ares.ui.navigation.SearchRoute
+import com.joaopires.ares.ui.navigation.SectionRoute
 import com.joaopires.ares.ui.navigation.scopeOf
 import com.joaopires.ares.ui.opml.ImportScreen
 import com.joaopires.ares.ui.opml.ImportViewModel
@@ -98,7 +108,30 @@ fun AresApp(incoming: IncomingLink? = null, onIncomingHandled: () -> Unit = {}) 
                 onSearch = { navController.navigate(SearchRoute(ScopeKind.All)) },
                 onAddFeed = { navController.navigate(AddFeedRoute()) },
                 onImport = { uri -> navController.navigate(ImportRoute(uri.toString())) },
+                onFeedSettings = { navController.navigate(FeedSettingsRoute(it)) },
+                onNewSection = { navController.navigate(SectionRoute()) },
+                onEditSection = { navController.navigate(SectionRoute(it)) },
+                onFilters = { navController.navigate(FiltersRoute) },
             )
+        }
+        composable<FeedSettingsRoute> { entry ->
+            val route = entry.toRoute<FeedSettingsRoute>()
+            val viewModel = viewModel { FeedSettingsViewModel(route.feedId, container.feeds, container.feedSource, container.refresh) }
+            FeedSettingsScreen(
+                viewModel = viewModel,
+                clock = container.clock,
+                onBack = { navController.popBackStack() },
+                onDeleted = { navController.popBackStack<HomeRoute>(inclusive = false) },
+            )
+        }
+        composable<SectionRoute> { entry ->
+            val route = entry.toRoute<SectionRoute>()
+            val viewModel = viewModel { SectionViewModel(route.sectionId.takeIf { it != NEW_SECTION }, container.feeds) }
+            SectionScreen(viewModel = viewModel, onDone = { navController.popBackStack() })
+        }
+        composable<FiltersRoute> {
+            val viewModel = viewModel { FiltersViewModel(container.filters) }
+            FiltersScreen(viewModel = viewModel, onBack = { navController.popBackStack() })
         }
         composable<AddFeedRoute> { entry ->
             val route = entry.toRoute<AddFeedRoute>()
@@ -148,6 +181,11 @@ fun AresApp(incoming: IncomingLink? = null, onIncomingHandled: () -> Unit = {}) 
                 onBack = { navController.popBackStack() },
                 onSearch = { navController.navigate(SearchRoute(route.kind, route.id, route.title)) },
                 onOpenEntry = { navController.navigate(EntryRoute(it)) },
+                onFeedSettings = if (route.kind == ScopeKind.Feed) {
+                    { navController.navigate(FeedSettingsRoute(route.id)) }
+                } else {
+                    null
+                },
             )
         }
         composable<SearchRoute> { entry ->

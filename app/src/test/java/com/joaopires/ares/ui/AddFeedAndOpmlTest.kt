@@ -314,7 +314,9 @@ class AddFeedScreenTest {
     fun addressThenPreviewThenSubscribe() {
         val viewModel = AddFeedViewModel("", false, container.feeds, container.feedSource)
         val showPreview = mutableStateOf(false)
+        val focus = FocusHolder()
         compose.setContent {
+            CaptureFocus(focus)
             CompositionLocalProvider(LocalAppContainer provides container) {
                 AresTheme {
                     if (showPreview.value) {
@@ -326,6 +328,7 @@ class AddFeedScreenTest {
             }
         }
         compose.onNodeWithTag("add-feed-url").performTextInput("new.example")
+        compose.releaseFocus(focus)
         compose.onNodeWithTag("add-feed-preview").performClick()
         compose.waitUntil(WAIT) { showPreview.value }
         compose.waitUntil(WAIT) { compose.onAllNodesWithText("Preview entry").fetchSemanticsNodes().isNotEmpty() }
@@ -339,7 +342,7 @@ class AddFeedScreenTest {
         val viewModel = HomeViewModel(container.feeds, container.entries, container.settings, container.refresh, container.imports, container.opml)
         compose.setContent {
             CompositionLocalProvider(LocalAppContainer provides container) {
-                AresTheme { HomeScreen(viewModel, onOpenList = {}, onSearch = {}, onAddFeed = {}, onImport = {}) }
+                AresTheme { HomeScreen(viewModel, onOpenList = {}, onSearch = {}, onAddFeed = {}, onImport = {}, onFeedSettings = {}, onNewSection = {}, onEditSection = {}, onFilters = {}) }
             }
         }
         compose.onNodeWithContentDescription(context.getString(R.string.action_more)).performClick()
