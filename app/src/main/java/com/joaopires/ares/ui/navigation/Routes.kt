@@ -39,6 +39,18 @@ const val NEW_SECTION: Long = -1L
 data object FiltersRoute
 
 @Serializable
+data object SettingsRoute
+
+@Serializable
+data object AppearanceRoute
+
+@Serializable
+data object LicencesRoute
+
+@Serializable
+data object LogsRoute
+
+@Serializable
 data class SearchRoute(val kind: ScopeKind, val id: Long = 0, val title: String = "")
 
 fun scopeOf(kind: ScopeKind, id: Long): EntryScope = when (kind) {

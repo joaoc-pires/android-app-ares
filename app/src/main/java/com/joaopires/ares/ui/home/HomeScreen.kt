@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -30,6 +31,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -71,7 +73,6 @@ import com.joaopires.ares.ui.common.failureMessage
 import com.joaopires.ares.ui.common.SwipeActionBox
 import com.joaopires.ares.ui.common.SwipeAction
 import com.joaopires.ares.ui.common.storedErrorMessage
-import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -84,14 +85,11 @@ fun HomeScreen(
     onFeedSettings: (Long) -> Unit,
     onNewSection: () -> Unit,
     onEditSection: (Long) -> Unit,
-    onFilters: () -> Unit,
+    onSettings: () -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var menuOpen by remember { mutableStateOf(false) }
     val importPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(onImport) }
-    val exportPicker = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/x-opml")) { uri ->
-        uri?.let(viewModel::export)
-    }
     val snackbar = remember { SnackbarHostState() }
     val resources = LocalResources.current
     var pendingDelete by remember { mutableStateOf<FeedRowUi?>(null) }
@@ -118,8 +116,6 @@ fun HomeScreen(
                 is HomeMessage.SectionDeleted -> snackbar.showSnackbar(resources.getString(R.string.section_deleted, message.name))
                 is HomeMessage.Subscribed -> snackbar.showSnackbar(resources.getString(R.string.add_feed_subscribed, message.title))
                 HomeMessage.AlreadySubscribed -> snackbar.showSnackbar(resources.getString(R.string.add_feed_already))
-                is HomeMessage.Exported -> snackbar.showSnackbar(resources.getQuantityString(R.plurals.export_done, message.count, message.count))
-                HomeMessage.ExportFailed -> snackbar.showSnackbar(resources.getString(R.string.export_failed))
             }
         }
     }
@@ -158,28 +154,11 @@ fun HomeScreen(
                                     },
                                 )
                                 DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.action_filters)) },
-                                    leadingIcon = { Icon(painterResource(R.drawable.ic_filter_list), contentDescription = null) },
+                                    text = { Text(stringResource(R.string.action_settings)) },
+                                    leadingIcon = { Icon(painterResource(R.drawable.ic_settings), contentDescription = null) },
                                     onClick = {
                                         menuOpen = false
-                                        onFilters()
-                                    },
-                                )
-                                HorizontalDivider()
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.opml_import)) },
-                                    leadingIcon = { Icon(painterResource(R.drawable.ic_download), contentDescription = null) },
-                                    onClick = {
-                                        menuOpen = false
-                                        importPicker.launch(OPML_PICKER_TYPES)
-                                    },
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.opml_export)) },
-                                    leadingIcon = { Icon(painterResource(R.drawable.ic_upload), contentDescription = null) },
-                                    onClick = {
-                                        menuOpen = false
-                                        exportPicker.launch("Ares-${LocalDate.now()}.opml")
+                                        onSettings()
                                     },
                                 )
                             }
@@ -219,7 +198,7 @@ fun HomeScreen(
                 .padding(padding),
         ) {
             if (state.isEmpty) {
-                EmptyHome()
+                EmptyHome(onAddFeed = onAddFeed, onImport = { importPicker.launch(OPML_PICKER_TYPES) })
             } else {
                 HomeList(
                     state = state,
@@ -503,7 +482,7 @@ private fun FeedRow(
 }
 
 @Composable
-private fun EmptyHome() {
+private fun EmptyHome(onAddFeed: () -> Unit, onImport: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -527,6 +506,17 @@ private fun EmptyHome() {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
+        Spacer(Modifier.height(24.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(onClick = onImport, modifier = Modifier.testTag("home-empty-import")) {
+                Icon(painterResource(R.drawable.ic_download), contentDescription = null)
+                Text(stringResource(R.string.opml_import), modifier = Modifier.padding(start = 8.dp))
+            }
+            Button(onClick = onAddFeed) {
+                Icon(painterResource(R.drawable.ic_add), contentDescription = null)
+                Text(stringResource(R.string.action_add_feed), modifier = Modifier.padding(start = 8.dp))
+            }
+        }
     }
 }
 

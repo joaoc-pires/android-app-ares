@@ -14,7 +14,11 @@ public sealed interface FullArticleResult {
     public data class Failed(val failure: FetchFailure) : FullArticleResult
 }
 
-public class ArticleRepository(private val db: AresDatabase, private val source: FeedSource) {
+public class ArticleRepository(
+    private val db: AresDatabase,
+    private val source: FeedSource,
+    private val log: EventLog = EventLog.None,
+) {
 
     public suspend fun loadFullArticle(entryId: String): FullArticleResult {
         val url = db.entryDao().urlOf(entryId) ?: return FullArticleResult.NoLink
@@ -22,7 +26,8 @@ public class ArticleRepository(private val db: AresDatabase, private val source:
             source.fetchArticle(url)
         } catch (e: CancellationException) {
             throw e
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            log.log(LogLevel.Error, "Full article from ${domainForLog(url)} crashed: ${e.javaClass.simpleName}")
             ArticleOutcome.Failed(FetchFailure.Network)
         }
         return when (outcome) {
@@ -30,8 +35,14 @@ public class ArticleRepository(private val db: AresDatabase, private val source:
                 db.entryDao().setFullContent(entryId, outcome.article.html)
                 FullArticleResult.Loaded
             }
-            ArticleOutcome.NotExtractable -> FullArticleResult.NotExtractable
-            is ArticleOutcome.Failed -> FullArticleResult.Failed(outcome.failure)
+            ArticleOutcome.NotExtractable -> {
+                log.log(LogLevel.Info, "No article could be extracted from ${domainForLog(url)}")
+                FullArticleResult.NotExtractable
+            }
+            is ArticleOutcome.Failed -> {
+                log.log(LogLevel.Warning, "Full article from ${domainForLog(url)} failed: ${outcome.failure.code()}")
+                FullArticleResult.Failed(outcome.failure)
+            }
         }
     }
 

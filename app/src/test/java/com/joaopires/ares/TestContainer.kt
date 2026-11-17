@@ -57,6 +57,7 @@ fun testContainer(source: FakeFeedSource = FakeFeedSource()): AppContainer {
         },
         createFeedSource = { source },
         settingsFile = settingsFile,
+        logDirectory = Files.createTempDirectory("ares-log").toFile(),
         clock = Clock.fixed(NOW, ZoneOffset.UTC),
     )
 }

@@ -8,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
@@ -35,6 +36,7 @@ import com.joaopires.ares.ui.manage.FiltersViewModel
 import com.joaopires.ares.ui.manage.SectionScreen
 import com.joaopires.ares.ui.manage.SectionViewModel
 import com.joaopires.ares.ui.navigation.AddFeedRoute
+import com.joaopires.ares.ui.navigation.AppearanceRoute
 import com.joaopires.ares.ui.navigation.EntriesRoute
 import com.joaopires.ares.ui.navigation.EntryRoute
 import com.joaopires.ares.ui.navigation.FeedPreviewRoute
@@ -42,15 +44,29 @@ import com.joaopires.ares.ui.navigation.FeedSettingsRoute
 import com.joaopires.ares.ui.navigation.FiltersRoute
 import com.joaopires.ares.ui.navigation.HomeRoute
 import com.joaopires.ares.ui.navigation.ImportRoute
+import com.joaopires.ares.ui.navigation.LicencesRoute
+import com.joaopires.ares.ui.navigation.LogsRoute
 import com.joaopires.ares.ui.navigation.NEW_SECTION
 import com.joaopires.ares.ui.navigation.ScopeKind
 import com.joaopires.ares.ui.navigation.SearchRoute
 import com.joaopires.ares.ui.navigation.SectionRoute
+import com.joaopires.ares.ui.navigation.SettingsRoute
 import com.joaopires.ares.ui.navigation.scopeOf
 import com.joaopires.ares.ui.opml.ImportScreen
 import com.joaopires.ares.ui.opml.ImportViewModel
 import com.joaopires.ares.ui.search.SearchScreen
 import com.joaopires.ares.ui.search.SearchViewModel
+import com.joaopires.ares.ui.settings.AppearanceScreen
+import com.joaopires.ares.ui.settings.LicencesScreen
+import com.joaopires.ares.ui.settings.LicencesViewModel
+import com.joaopires.ares.ui.settings.LogsScreen
+import com.joaopires.ares.ui.settings.LogsViewModel
+import com.joaopires.ares.ui.settings.SettingsNavigation
+import com.joaopires.ares.ui.settings.SettingsScreen
+import com.joaopires.ares.ui.settings.SettingsViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.File
 
 private const val ADD_FEED_RESULT_TITLE = "addFeedResultTitle"
 private const val ADD_FEED_RESULT_ALREADY = "addFeedResultAlready"
@@ -77,6 +93,10 @@ fun AresApp(incoming: IncomingLink? = null, onIncomingHandled: () -> Unit = {}) 
         navController.popBackStack<AddFeedRoute>(inclusive = true)
     }
 
+    val resources = LocalResources.current
+    val shareDirectory = remember(container) { File(container.cacheDirectory, "logs") }
+    fun settingsViewModel() = SettingsViewModel(container.settings, container.entries, container.opml, container.eventLog, shareDirectory)
+
     val unreadTitle = stringResource(R.string.list_unread)
     val todayTitle = stringResource(R.string.list_today)
     val bookmarksTitle = stringResource(R.string.list_bookmarks)
@@ -84,7 +104,7 @@ fun AresApp(incoming: IncomingLink? = null, onIncomingHandled: () -> Unit = {}) 
     NavHost(navController = navController, startDestination = HomeRoute) {
         composable<HomeRoute> { entry ->
             val viewModel = viewModel {
-                HomeViewModel(container.feeds, container.entries, container.settings, container.refresh, container.imports, container.opml)
+                HomeViewModel(container.feeds, container.entries, container.settings, container.refresh, container.imports)
             }
             val addedTitle by entry.savedStateHandle.getStateFlow<String?>(ADD_FEED_RESULT_TITLE, null).collectAsStateWithLifecycle()
             LaunchedEffect(addedTitle) {
@@ -111,8 +131,40 @@ fun AresApp(incoming: IncomingLink? = null, onIncomingHandled: () -> Unit = {}) 
                 onFeedSettings = { navController.navigate(FeedSettingsRoute(it)) },
                 onNewSection = { navController.navigate(SectionRoute()) },
                 onEditSection = { navController.navigate(SectionRoute(it)) },
-                onFilters = { navController.navigate(FiltersRoute) },
+                onSettings = { navController.navigate(SettingsRoute) },
             )
+        }
+        composable<SettingsRoute> {
+            val viewModel = viewModel { settingsViewModel() }
+            SettingsScreen(
+                viewModel = viewModel,
+                navigation = SettingsNavigation(
+                    onBack = { navController.popBackStack() },
+                    onAppearance = { navController.navigate(AppearanceRoute) },
+                    onFilters = { navController.navigate(FiltersRoute) },
+                    onImport = { uri -> navController.navigate(ImportRoute(uri.toString())) },
+                    onLicences = { navController.navigate(LicencesRoute) },
+                    onLogs = { navController.navigate(LogsRoute) },
+                ),
+            )
+        }
+        composable<AppearanceRoute> {
+            val viewModel = viewModel { settingsViewModel() }
+            AppearanceScreen(viewModel = viewModel, onBack = { navController.popBackStack() })
+        }
+        composable<LicencesRoute> {
+            val viewModel = viewModel {
+                LicencesViewModel {
+                    withContext(Dispatchers.IO) {
+                        resources.openRawResource(R.raw.aboutlibraries).bufferedReader().use { it.readText() }
+                    }
+                }
+            }
+            LicencesScreen(viewModel = viewModel, onBack = { navController.popBackStack() })
+        }
+        composable<LogsRoute> {
+            val viewModel = viewModel { LogsViewModel(container.eventLog, shareDirectory) }
+            LogsScreen(viewModel = viewModel, onBack = { navController.popBackStack() })
         }
         composable<FeedSettingsRoute> { entry ->
             val route = entry.toRoute<FeedSettingsRoute>()

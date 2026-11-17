@@ -14,6 +14,7 @@ import com.joaopires.ares.core.data.FeedClientSource
 import com.joaopires.ares.core.data.FeedImporter
 import com.joaopires.ares.core.data.FeedRepository
 import com.joaopires.ares.core.data.FeedSource
+import com.joaopires.ares.core.data.FileEventLog
 import com.joaopires.ares.core.data.FilterRepository
 import com.joaopires.ares.core.data.RefreshManager
 import com.joaopires.ares.core.data.SettingsRepository
@@ -40,9 +41,12 @@ class AppContainer(
     createDatabase: (Context) -> AresDatabase = AresDatabase::create,
     createFeedSource: (FeedClient) -> FeedSource = ::FeedClientSource,
     settingsFile: File? = null,
+    logDirectory: File? = null,
     val clock: Clock = Clock.systemUTC(),
 ) {
     private val appContext = context.applicationContext
+
+    val cacheDirectory: File get() = appContext.cacheDir
 
     val applicationScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -57,6 +61,8 @@ class AppContainer(
         )
     }
 
+    val eventLog: FileEventLog by lazy { FileEventLog(logDirectory ?: File(appContext.filesDir, "logs"), clock) }
+
     val feedClient: FeedClient by lazy {
         FeedClient(FeedClientConfig(appVersion = BuildConfig.VERSION_NAME), { Xml.newPullParser() }, clock)
     }
@@ -69,13 +75,13 @@ class AppContainer(
 
     val filters: FilterRepository by lazy { FilterRepository(database) }
 
-    val articles: ArticleRepository by lazy { ArticleRepository(database, feedSource) }
+    val articles: ArticleRepository by lazy { ArticleRepository(database, feedSource, eventLog) }
 
-    val imports: ImportController by lazy { ImportController(FeedImporter(feeds, feedSource), applicationScope) }
+    val imports: ImportController by lazy { ImportController(FeedImporter(feeds, feedSource, log = eventLog), applicationScope) }
 
     val opml: OpmlService by lazy { OpmlService(appContext.contentResolver, feeds, clock) }
 
-    val refresh: RefreshManager by lazy { RefreshManager(database, feedSource, settings, clock) }
+    val refresh: RefreshManager by lazy { RefreshManager(database, feedSource, settings, clock, log = eventLog) }
 
     private val allowYouTubeImages = AtomicBoolean(true)
 

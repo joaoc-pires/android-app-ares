@@ -226,6 +226,7 @@ class ManageViewModelTest {
         viewModel.add()
         val filter = withTimeout(WAIT) { container.filters.filters.first { it.isNotEmpty() } }.single()
         viewModel.update(filter.id, "sponsored")
+        withTimeout(WAIT) { container.filters.filters.first { it.single().expression == "sponsored" } }
         viewModel.requestApply()
         assertEquals(FiltersMessage.ConfirmApply(1), withTimeout(WAIT) { viewModel.messages.first() })
         viewModel.confirmApply()
@@ -347,10 +348,10 @@ class ManageScreenTest {
             container.subscribe(feed("https://a.example/feed", title = "Alpha"), sectionId = section)
             section
         }
-        val viewModel = owned { HomeViewModel(container.feeds, container.entries, container.settings, container.refresh, container.imports, container.opml) }
+        val viewModel = owned { HomeViewModel(container.feeds, container.entries, container.settings, container.refresh, container.imports) }
         var editedSection: Long? = null
         var settingsFor: Long? = null
-        var filtersOpened = false
+        var settingsOpened = false
         compose.setContent {
             CompositionLocalProvider(LocalAppContainer provides container) {
                 AresTheme {
@@ -363,15 +364,15 @@ class ManageScreenTest {
                         onFeedSettings = { settingsFor = it },
                         onNewSection = {},
                         onEditSection = { editedSection = it },
-                        onFilters = { filtersOpened = true },
+                        onSettings = { settingsOpened = true },
                     )
                 }
             }
         }
         compose.onNodeWithContentDescription(context.getString(R.string.action_more)).performClick()
         compose.onNodeWithText(context.getString(R.string.action_new_section)).assertExists()
-        compose.onNodeWithText(context.getString(R.string.action_filters)).performClick()
-        assertTrue(filtersOpened)
+        compose.onNodeWithText(context.getString(R.string.action_settings)).performClick()
+        assertTrue(settingsOpened)
 
         compose.waitUntil(WAIT) { compose.onAllNodesWithText("Alpha").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("section-menu-$sectionId").performClick()

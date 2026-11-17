@@ -56,6 +56,23 @@ android {
     }
 }
 
+if (gradle.startParameter.taskNames.any { it.substringAfterLast(':') == "exportLibraryDefinitions" }) {
+    apply(plugin = libs.plugins.aboutlibraries.get().pluginId)
+    extensions.configure<com.mikepenz.aboutlibraries.plugin.AboutLibrariesExtension> {
+        offlineMode = true
+        collect {
+            fetchRemoteLicense = false
+            fetchRemoteFunding = false
+            filterVariants.add("release")
+        }
+        export {
+            outputFile = file("src/main/res/raw/aboutlibraries.json")
+            excludeFields.addAll("developers", "funding")
+            prettyPrint = true
+        }
+    }
+}
+
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
@@ -78,6 +95,7 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
     implementation(libs.okhttp)
+    implementation(libs.aboutlibraries.core)
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)

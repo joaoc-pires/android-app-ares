@@ -16,7 +16,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
-import java.net.URI
 import java.util.concurrent.ConcurrentHashMap
 
 public data class ImportCandidate(val url: String, val title: String?, val section: String?)
@@ -35,6 +34,7 @@ public class FeedImporter(
     private val source: FeedSource,
     private val maxConcurrent: Int = 6,
     private val maxPerHost: Int = 2,
+    private val log: EventLog = EventLog.None,
 ) {
     private val running = Mutex()
     private val progressState = MutableStateFlow<ImportProgress>(ImportProgress.Idle)
@@ -53,7 +53,7 @@ public class FeedImporter(
             val results = coroutineScope {
                 unique.map { candidate ->
                     async {
-                        val hostLimit = perHost.computeIfAbsent(hostOf(candidate.url)) { Semaphore(maxPerHost) }
+                        val hostLimit = perHost.computeIfAbsent(hostKey(candidate.url)) { Semaphore(maxPerHost) }
                         global.withPermit {
                             hostLimit.withPermit {
                                 importOne(candidate, candidate.section?.trim()?.lowercase()?.let { sectionIds[it] })
@@ -70,7 +70,13 @@ public class FeedImporter(
                 imported = results.count { it is Result.Imported },
                 alreadySubscribed = results.count { it is Result.Already },
                 failures = results.filterIsInstance<Result.Failed>().map { it.failure },
-            )
+            ).also { summary ->
+                summary.failures.forEach { log.log(LogLevel.Warning, "Import of ${domainForLog(it.url)} failed: ${it.failure.code()}") }
+                log.log(
+                    LogLevel.Info,
+                    "Imported ${summary.imported} of ${unique.size} feeds, ${summary.alreadySubscribed} already followed, ${summary.failures.size} failed",
+                )
+            }
         } finally {
             progressState.value = ImportProgress.Idle
         }
@@ -82,7 +88,8 @@ public class FeedImporter(
             source.fetch(url, null, url)
         } catch (e: CancellationException) {
             throw e
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            log.log(LogLevel.Error, "Import of ${domainForLog(url)} crashed: ${e.javaClass.simpleName}")
             FetchOutcome.Failed(FetchFailure.Network)
         }
         return when (outcome) {
@@ -104,10 +111,4 @@ public class FeedImporter(
         data object Already : Result
         data class Failed(val failure: ImportFailure) : Result
     }
-}
-
-private fun hostOf(url: String): String = try {
-    URI(url).host?.lowercase() ?: url
-} catch (_: Exception) {
-    url
 }

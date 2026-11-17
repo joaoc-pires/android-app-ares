@@ -2,7 +2,6 @@
 
 package com.joaopires.ares.ui.home
 
-import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.joaopires.ares.core.data.EntryRepository
@@ -16,8 +15,6 @@ import com.joaopires.ares.core.data.model.EntryScope
 import com.joaopires.ares.core.data.model.FeedSummary
 import com.joaopires.ares.core.data.model.HomeCounts
 import com.joaopires.ares.ui.opml.ImportController
-import com.joaopires.ares.ui.opml.OpmlService
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -61,8 +58,6 @@ sealed interface HomeMessage {
     data class SectionDeleted(val name: String) : HomeMessage
     data class Subscribed(val title: String) : HomeMessage
     data object AlreadySubscribed : HomeMessage
-    data class Exported(val count: Int) : HomeMessage
-    data object ExportFailed : HomeMessage
 }
 
 class HomeViewModel(
@@ -71,7 +66,6 @@ class HomeViewModel(
     settings: SettingsRepository,
     private val refresh: RefreshManager,
     private val imports: ImportController,
-    private val opml: OpmlService,
 ) : ViewModel() {
 
     private val library = combine(
@@ -128,20 +122,6 @@ class HomeViewModel(
         viewModelScope.launch {
             feeds.deleteSection(section.id)
             messageChannel.send(HomeMessage.SectionDeleted(section.name))
-        }
-    }
-
-    fun export(uri: Uri) {
-        viewModelScope.launch {
-            messageChannel.send(
-                try {
-                    HomeMessage.Exported(opml.export(uri))
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (_: Exception) {
-                    HomeMessage.ExportFailed
-                },
-            )
         }
     }
 

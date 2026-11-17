@@ -22,7 +22,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
-import java.net.URI
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -43,6 +42,7 @@ public class RefreshManager(
     private val maxConcurrent: Int = 6,
     private val maxPerHost: Int = 2,
     private val minInterval: Duration = Duration.ofMinutes(5),
+    private val log: EventLog = EventLog.None,
 ) {
     private val running = Mutex()
     private val progressState = MutableStateFlow<RefreshProgress>(RefreshProgress.Idle)
@@ -57,8 +57,14 @@ public class RefreshManager(
         try {
             progressState.value = RefreshProgress.Running(0, feeds.size)
             val results = refreshConcurrently(feeds)
-            applyRetention(db, settings.current().retentionDays, clock.instant())
-            summarize(results)
+            val removed = applyRetention(db, settings.current().retentionDays, clock.instant())
+            summarize(results).also { summary ->
+                log.log(
+                    LogLevel.Info,
+                    "Refreshed ${summary.refreshed} of ${feeds.size} feeds, ${summary.failed} failed, " +
+                        "${summary.newEntries.size} new entries, $removed old entries removed",
+                )
+            }
         } finally {
             progressState.value = RefreshProgress.Idle
         }
@@ -74,7 +80,7 @@ public class RefreshManager(
         val perHost = ConcurrentHashMap<String, Semaphore>()
         feeds.map { feed ->
             async {
-                val hostLimit = perHost.computeIfAbsent(hostOf(feed.url)) { Semaphore(maxPerHost) }
+                val hostLimit = perHost.computeIfAbsent(hostKey(feed.url)) { Semaphore(maxPerHost) }
                 global.withPermit {
                     hostLimit.withPermit { refreshOne(feed) }
                 }.also {
@@ -91,8 +97,14 @@ public class RefreshManager(
             source.fetch(feed.url, Validators(feed.etag, feed.lastModified), feed.entryKey)
         } catch (e: CancellationException) {
             throw e
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            log.log(LogLevel.Error, "Refresh of ${domainForLog(feed.url)} crashed: ${e.javaClass.simpleName}")
             FetchOutcome.Failed(FetchFailure.Network)
+        }
+        when (outcome) {
+            FetchOutcome.Gone -> log.log(LogLevel.Warning, "Feed at ${domainForLog(feed.url)} is gone")
+            is FetchOutcome.Failed -> log.log(LogLevel.Warning, "Refresh of ${domainForLog(feed.url)} failed: ${outcome.failure.code()}")
+            else -> Unit
         }
         val now = clock.instant()
         return db.withTransaction {
@@ -158,10 +170,4 @@ internal fun FetchFailure.code(): String = when (this) {
     FetchFailure.NotAFeed -> "NotAFeed"
     FetchFailure.Malformed -> "Malformed"
     FetchFailure.InsecureOnly -> "InsecureOnly"
-}
-
-private fun hostOf(url: String): String = try {
-    URI(url).host?.lowercase() ?: url
-} catch (_: Exception) {
-    url
 }

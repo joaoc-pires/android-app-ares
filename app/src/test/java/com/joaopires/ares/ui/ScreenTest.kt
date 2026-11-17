@@ -59,10 +59,10 @@ class ScreenTest {
     }
 
     private fun showHome() {
-        val viewModel = HomeViewModel(container.feeds, container.entries, container.settings, container.refresh, container.imports, container.opml)
+        val viewModel = HomeViewModel(container.feeds, container.entries, container.settings, container.refresh, container.imports)
         compose.setContent {
             CompositionLocalProvider(LocalAppContainer provides container) {
-                AresTheme { HomeScreen(viewModel, onOpenList = {}, onSearch = {}, onAddFeed = {}, onImport = {}, onFeedSettings = {}, onNewSection = {}, onEditSection = {}, onFilters = {}) }
+                AresTheme { HomeScreen(viewModel, onOpenList = {}, onSearch = {}, onAddFeed = {}, onImport = {}, onFeedSettings = {}, onNewSection = {}, onEditSection = {}, onSettings = {}) }
             }
         }
     }

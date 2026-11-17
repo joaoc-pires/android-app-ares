@@ -56,7 +56,7 @@ class ViewModelTest {
 
     private fun testContainer() = com.joaopires.ares.testContainer(source)
 
-    private fun home() = HomeViewModel(container.feeds, container.entries, container.settings, container.refresh, container.imports, container.opml)
+    private fun home() = HomeViewModel(container.feeds, container.entries, container.settings, container.refresh, container.imports)
 
     private suspend fun HomeViewModel.awaitState(predicate: (HomeUiState) -> Boolean): HomeUiState =
         withTimeout(WAIT_MILLIS) { state.first(predicate) }

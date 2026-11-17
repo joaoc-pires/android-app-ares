@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -338,16 +339,17 @@ class AddFeedScreenTest {
     }
 
     @Test
-    fun homeOverflowMenuOffersImportAndExport() {
-        val viewModel = HomeViewModel(container.feeds, container.entries, container.settings, container.refresh, container.imports, container.opml)
+    fun emptyHomeOffersImportAndHomeMenuOffersSettings() {
+        val viewModel = HomeViewModel(container.feeds, container.entries, container.settings, container.refresh, container.imports)
         compose.setContent {
             CompositionLocalProvider(LocalAppContainer provides container) {
-                AresTheme { HomeScreen(viewModel, onOpenList = {}, onSearch = {}, onAddFeed = {}, onImport = {}, onFeedSettings = {}, onNewSection = {}, onEditSection = {}, onFilters = {}) }
+                AresTheme { HomeScreen(viewModel, onOpenList = {}, onSearch = {}, onAddFeed = {}, onImport = {}, onFeedSettings = {}, onNewSection = {}, onEditSection = {}, onSettings = {}) }
             }
         }
+        compose.waitUntil(WAIT) { compose.onAllNodesWithTag("home-empty-import").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithContentDescription(context.getString(R.string.action_more)).performClick()
-        compose.onNodeWithText(context.getString(R.string.opml_import)).assertExists()
-        compose.onNodeWithText(context.getString(R.string.opml_export)).assertExists()
+        compose.onNodeWithText(context.getString(R.string.action_settings)).assertExists()
+        assertTrue(compose.onAllNodesWithText(context.getString(R.string.opml_export)).fetchSemanticsNodes().isEmpty())
     }
 
     @Test
