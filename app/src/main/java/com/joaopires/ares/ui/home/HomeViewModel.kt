@@ -14,18 +14,22 @@ import com.joaopires.ares.core.data.SettingsRepository
 import com.joaopires.ares.core.data.model.EntryScope
 import com.joaopires.ares.core.data.model.FeedSummary
 import com.joaopires.ares.core.data.model.HomeCounts
+import com.joaopires.ares.throttleLatest
 import com.joaopires.ares.ui.opml.ImportController
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Duration
 
 private val REFRESH_ON_OPEN_AFTER: Duration = Duration.ofMinutes(15)
+private const val LIBRARY_UPDATE_MILLIS = 300L
 
 data class FeedRowUi(
     val id: Long,
@@ -88,11 +92,11 @@ class HomeViewModel(
             hideUnread = appSettings.hideUnreadMarkers,
             refreshing = progress is RefreshProgress.Running,
         )
-    }
+    }.throttleLatest(LIBRARY_UPDATE_MILLIS)
 
     val state: StateFlow<HomeUiState> = combine(library, imports.progress, imports.summary) { home, progress, summary ->
         home.copy(importing = progress as? ImportProgress.Running, importSummary = summary)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
+    }.flowOn(Dispatchers.Default).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
     private val messageChannel = Channel<HomeMessage>(Channel.BUFFERED)
     val messages: Flow<HomeMessage> = messageChannel.receiveAsFlow()

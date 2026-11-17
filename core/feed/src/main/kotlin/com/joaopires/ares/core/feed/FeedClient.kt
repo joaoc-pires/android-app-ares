@@ -5,6 +5,7 @@ package com.joaopires.ares.core.feed
 import com.joaopires.ares.core.feed.parse.decodeText
 import com.joaopires.ares.core.xml.LimitExceededException
 import com.joaopires.ares.core.xml.LimitedInputStream
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -29,13 +30,15 @@ public class FeedClient internal constructor(
     private val newParser: () -> XmlPullParser,
     private val clock: Clock,
     baseClient: OkHttpClient,
+    private val workDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) {
 
     public constructor(
         config: FeedClientConfig,
         newParser: () -> XmlPullParser,
         clock: Clock = Clock.systemUTC(),
-    ) : this(config, newParser, clock, OkHttpClient())
+        workDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    ) : this(config, newParser, clock, OkHttpClient(), workDispatcher)
 
     private val http: OkHttpClient = baseClient.newBuilder()
         .followRedirects(false)
@@ -71,7 +74,7 @@ public class FeedClient internal constructor(
             is Parsed.Error -> if (parsed.failure != FetchFailure.NotAFeed) return DiscoveryOutcome.Failed(parsed.failure)
         }
 
-        val candidates = discoverLinks(download)
+        val candidates = withContext(workDispatcher) { discoverLinks(download) }
         if (candidates.size > 1) return DiscoveryOutcome.Candidates(candidates)
         candidates.singleOrNull()?.let { candidate ->
             return when (val outcome = fetch(candidate.url)) {
@@ -94,7 +97,7 @@ public class FeedClient internal constructor(
             is Download.Failed -> ArticleOutcome.Failed(download.failure)
             Download.Gone -> ArticleOutcome.Failed(FetchFailure.Http(410))
             is Download.NotModified -> ArticleOutcome.NotExtractable
-            is Download.Body -> withContext(Dispatchers.Default) {
+            is Download.Body -> withContext(workDispatcher) {
                 extractArticle(decodeText(download.bytes, download.charset), download.finalUrl)
                     ?.let { ArticleOutcome.Extracted(it) }
                     ?: ArticleOutcome.NotExtractable
@@ -112,7 +115,7 @@ public class FeedClient internal constructor(
             .distinctBy { it.url }
     }
 
-    private suspend fun parse(download: Download.Body, feedKey: String): Parsed = withContext(Dispatchers.Default) {
+    private suspend fun parse(download: Download.Body, feedKey: String): Parsed = withContext(workDispatcher) {
         try {
             Parsed.Ok(
                 parseFeedDocument(

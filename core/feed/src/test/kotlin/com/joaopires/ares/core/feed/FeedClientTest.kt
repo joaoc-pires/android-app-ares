@@ -4,6 +4,7 @@ package com.joaopires.ares.core.feed
 
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -28,6 +29,7 @@ import java.net.InetAddress
 import java.time.Clock
 import java.time.Duration
 import java.time.ZoneOffset
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 class FeedClientTest {
@@ -83,6 +85,27 @@ class FeedClientTest {
         assertEquals(1, outcome.feed.entries.size)
         assertEquals(Validators("\"v1\"", "Mon, 16 Nov 2026 10:00:00 GMT"), outcome.validators)
         assertNull(outcome.newUrl)
+    }
+
+    @Test
+    fun parsingRunsOnTheGivenDispatcher() = runBlocking {
+        val executor = Executors.newSingleThreadExecutor { Thread(it, "ares-parse-test") }
+        try {
+            val parserThreads = mutableListOf<String>()
+            val client = FeedClient(
+                FeedClientConfig(appVersion = "1"),
+                { KXmlParser().also { parserThreads += Thread.currentThread().name } },
+                Clock.fixed(NOW, ZoneOffset.UTC),
+                trustingClient,
+                executor.asCoroutineDispatcher(),
+            )
+            server.enqueue(ok())
+            assertTrue(client.fetch(url("/feed")) is FetchOutcome.Updated)
+            assertTrue(parserThreads.isNotEmpty())
+            assertTrue(parserThreads.toString(), parserThreads.all { it.startsWith("ares-parse-test") })
+        } finally {
+            executor.shutdownNow()
+        }
     }
 
     @Test

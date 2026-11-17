@@ -28,6 +28,7 @@ import com.joaopires.ares.notifications.Notifier
 import com.joaopires.ares.ui.images.AresImageInterceptor
 import com.joaopires.ares.ui.opml.ImportController
 import com.joaopires.ares.ui.opml.OpmlService
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -41,6 +42,7 @@ import java.time.Clock
 import java.util.concurrent.atomic.AtomicBoolean
 
 private const val IMAGE_CACHE_BYTES = 100L * 1024 * 1024
+private const val PARSING_THREADS = 2
 
 class AppContainer(
     context: Context,
@@ -69,8 +71,10 @@ class AppContainer(
 
     val eventLog: FileEventLog by lazy { FileEventLog(logDirectory ?: File(appContext.filesDir, "logs"), clock) }
 
+    private val parsingDispatcher: CoroutineDispatcher by lazy { backgroundDispatcher("ares-parse", PARSING_THREADS) }
+
     val feedClient: FeedClient by lazy {
-        FeedClient(FeedClientConfig(appVersion = BuildConfig.VERSION_NAME), { Xml.newPullParser() }, clock)
+        FeedClient(FeedClientConfig(appVersion = BuildConfig.VERSION_NAME), { Xml.newPullParser() }, clock, parsingDispatcher)
     }
 
     val feedSource: FeedSource by lazy { createFeedSource(feedClient) }
