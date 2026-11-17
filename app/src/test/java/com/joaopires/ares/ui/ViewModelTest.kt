@@ -6,18 +6,13 @@ import androidx.paging.testing.asSnapshot
 import com.joaopires.ares.AppContainer
 import com.joaopires.ares.FakeFeedSource
 import com.joaopires.ares.core.data.model.EntryScope
-import com.joaopires.ares.core.feed.DiscoveredFeed
-import com.joaopires.ares.core.feed.DiscoveryOutcome
 import com.joaopires.ares.core.feed.FetchFailure
 import com.joaopires.ares.core.feed.FetchOutcome
-import com.joaopires.ares.core.feed.Validators
 import com.joaopires.ares.entry
 import com.joaopires.ares.feed
 import com.joaopires.ares.subscribe
 import com.joaopires.ares.ui.entries.EntriesMessage
 import com.joaopires.ares.ui.entries.EntriesViewModel
-import com.joaopires.ares.ui.home.AddFeedError
-import com.joaopires.ares.ui.home.AddFeedState
 import com.joaopires.ares.ui.home.HomeMessage
 import com.joaopires.ares.ui.home.HomeUiState
 import com.joaopires.ares.ui.home.HomeViewModel
@@ -61,7 +56,7 @@ class ViewModelTest {
 
     private fun testContainer() = com.joaopires.ares.testContainer(source)
 
-    private fun home() = HomeViewModel(container.feeds, container.entries, container.settings, container.refresh, container.feedSource)
+    private fun home() = HomeViewModel(container.feeds, container.entries, container.settings, container.refresh, container.imports, container.opml)
 
     private suspend fun HomeViewModel.awaitState(predicate: (HomeUiState) -> Boolean): HomeUiState =
         withTimeout(WAIT_MILLIS) { state.first(predicate) }
@@ -89,57 +84,6 @@ class ViewModelTest {
     fun hideUnreadSettingIsReflected() = runBlocking<Unit> {
         container.settings.update { it.copy(hideUnreadMarkers = true) }
         assertTrue(home().awaitState { it.loaded }.hideUnread)
-    }
-
-    @Test
-    fun addingAFeedSubscribesAndReports() = runBlocking<Unit> {
-        source.onDiscover = { DiscoveryOutcome.Found(feed("https://new.example/feed", entry("n1"), title = "New Feed"), Validators(null, null)) }
-        val viewModel = home()
-        viewModel.showAddFeed()
-        viewModel.onAddFeedUrlChanged("new.example")
-        viewModel.submitAddFeed()
-        assertEquals(HomeMessage.Subscribed("New Feed"), withTimeout(WAIT_MILLIS) { viewModel.messages.first() })
-        assertEquals(AddFeedState.Hidden, viewModel.addFeed.value)
-        assertEquals("https://new.example/feed", container.feeds.feeds.first().single().url)
-    }
-
-    @Test
-    fun severalDiscoveredFeedsLetTheUserChoose() = runBlocking<Unit> {
-        val candidates = listOf(DiscoveredFeed("https://c.example/posts.xml", "Posts"), DiscoveredFeed("https://c.example/comments.xml", "Comments"))
-        source.onDiscover = { DiscoveryOutcome.Candidates(candidates) }
-        source.onFetch = { url -> FetchOutcome.Updated(feed(url, entry("p1"), title = "Posts"), Validators(null, null), null) }
-        val viewModel = home()
-        viewModel.showAddFeed()
-        viewModel.onAddFeedUrlChanged("c.example")
-        viewModel.submitAddFeed()
-        assertEquals(AddFeedState.Choosing("c.example", candidates), viewModel.addFeed.value)
-        viewModel.chooseCandidate(candidates[0])
-        assertEquals(HomeMessage.Subscribed("Posts"), withTimeout(WAIT_MILLIS) { viewModel.messages.first() })
-    }
-
-    @Test
-    fun addFeedFailuresAreShownInTheDialog() = runBlocking<Unit> {
-        source.onDiscover = { DiscoveryOutcome.Failed(FetchFailure.InsecureOnly) }
-        val viewModel = home()
-        viewModel.showAddFeed()
-        viewModel.onAddFeedUrlChanged("http://old.example/rss")
-        viewModel.submitAddFeed()
-        assertEquals(AddFeedState.Editing("http://old.example/rss", AddFeedError.Fetch(FetchFailure.InsecureOnly)), viewModel.addFeed.value)
-    }
-
-    @Test
-    fun invalidAddressesNeverReachTheNetwork() = runBlocking<Unit> {
-        var called = false
-        source.onDiscover = {
-            called = true
-            DiscoveryOutcome.NothingFound
-        }
-        val viewModel = home()
-        viewModel.showAddFeed()
-        viewModel.onAddFeedUrlChanged("not a url")
-        viewModel.submitAddFeed()
-        assertEquals(AddFeedState.Editing("not a url", AddFeedError.InvalidUrl), viewModel.addFeed.value)
-        assertFalse(called)
     }
 
     @Test
@@ -188,15 +132,5 @@ class ViewModelTest {
         withTimeout(WAIT_MILLIS) { container.entries.detail("a1").first { it?.isBookmarked == true && it.isRead } }
         viewModel.markAllRead()
         assertEquals(EntriesMessage.MarkedRead(emptyList()), withTimeout(WAIT_MILLIS) { viewModel.messages.first() })
-    }
-
-    @Test
-    fun unexpectedErrorsWhileAddingAFeedAreShownNotThrown() = runBlocking<Unit> {
-        source.onDiscover = { throw IllegalStateException("parser bug") }
-        val viewModel = home()
-        viewModel.showAddFeed()
-        viewModel.onAddFeedUrlChanged("broken.example")
-        viewModel.submitAddFeed()
-        assertEquals(AddFeedState.Editing("broken.example", AddFeedError.Fetch(FetchFailure.Malformed)), viewModel.addFeed.value)
     }
 }

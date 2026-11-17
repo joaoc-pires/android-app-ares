@@ -3,7 +3,7 @@
 package com.joaopires.ares.ui
 
 import com.joaopires.ares.ui.common.iconCandidates
-import com.joaopires.ares.ui.home.normalizeFeedInput
+import com.joaopires.ares.ui.addfeed.normalizeFeedInput
 import com.joaopires.ares.ui.images.imageRequestUrl
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

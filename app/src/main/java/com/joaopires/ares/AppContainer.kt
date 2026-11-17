@@ -11,6 +11,7 @@ import coil3.request.crossfade
 import com.joaopires.ares.core.data.ArticleRepository
 import com.joaopires.ares.core.data.EntryRepository
 import com.joaopires.ares.core.data.FeedClientSource
+import com.joaopires.ares.core.data.FeedImporter
 import com.joaopires.ares.core.data.FeedRepository
 import com.joaopires.ares.core.data.FeedSource
 import com.joaopires.ares.core.data.FilterRepository
@@ -20,6 +21,8 @@ import com.joaopires.ares.core.data.db.AresDatabase
 import com.joaopires.ares.core.feed.FeedClient
 import com.joaopires.ares.core.feed.FeedClientConfig
 import com.joaopires.ares.ui.images.AresImageInterceptor
+import com.joaopires.ares.ui.opml.ImportController
+import com.joaopires.ares.ui.opml.OpmlService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -67,6 +70,10 @@ class AppContainer(
     val filters: FilterRepository by lazy { FilterRepository(database) }
 
     val articles: ArticleRepository by lazy { ArticleRepository(database, feedSource) }
+
+    val imports: ImportController by lazy { ImportController(FeedImporter(feeds, feedSource), applicationScope) }
+
+    val opml: OpmlService by lazy { OpmlService(appContext.contentResolver, feeds, clock) }
 
     val refresh: RefreshManager by lazy { RefreshManager(database, feedSource, settings, clock) }
 

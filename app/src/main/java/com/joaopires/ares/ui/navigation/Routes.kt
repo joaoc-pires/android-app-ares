@@ -19,6 +19,15 @@ data class EntriesRoute(val kind: ScopeKind, val id: Long = 0, val title: String
 data class EntryRoute(val entryId: String)
 
 @Serializable
+data class AddFeedRoute(val url: String = "", val autoPreview: Boolean = false)
+
+@Serializable
+data object FeedPreviewRoute
+
+@Serializable
+data class ImportRoute(val uri: String)
+
+@Serializable
 data class SearchRoute(val kind: ScopeKind, val id: Long = 0, val title: String = "")
 
 fun scopeOf(kind: ScopeKind, id: Long): EntryScope = when (kind) {

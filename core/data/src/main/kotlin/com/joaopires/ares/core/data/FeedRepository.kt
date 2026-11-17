@@ -4,6 +4,7 @@ package com.joaopires.ares.core.data
 
 import androidx.room.withTransaction
 import com.joaopires.ares.core.data.db.AresDatabase
+import com.joaopires.ares.core.data.db.ExportedFeed
 import com.joaopires.ares.core.data.db.FeedEntity
 import com.joaopires.ares.core.data.db.SectionEntity
 import com.joaopires.ares.core.data.model.FeedSummary
@@ -77,6 +78,14 @@ public class FeedRepository(private val db: AresDatabase, private val clock: Clo
             db.entryDao().deleteUnbookmarked(feedId)
             db.feedDao().delete(feedId)
         }
+    }
+
+    public suspend fun exportList(): List<ExportedFeed> = db.feedDao().exportList()
+
+    public suspend fun ensureSection(name: String): Long? = db.withTransaction {
+        val trimmed = name.trim()
+        if (trimmed.isEmpty()) return@withTransaction null
+        db.sectionDao().byName(trimmed)?.id ?: db.sectionDao().insert(SectionEntity(name = trimmed))
     }
 
     public suspend fun createSection(name: String): Long? = db.withTransaction {

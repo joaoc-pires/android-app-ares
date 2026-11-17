@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
@@ -43,6 +45,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
@@ -60,10 +65,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.joaopires.ares.R
+import com.joaopires.ares.core.data.ImportSummary
 import com.joaopires.ares.ui.common.FeedIcon
+import com.joaopires.ares.ui.common.failureMessage
 import com.joaopires.ares.ui.common.SwipeActionBox
 import com.joaopires.ares.ui.common.SwipeAction
 import com.joaopires.ares.ui.common.storedErrorMessage
+import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,9 +79,15 @@ fun HomeScreen(
     viewModel: HomeViewModel,
     onOpenList: (HomeDestination) -> Unit,
     onSearch: () -> Unit,
+    onAddFeed: () -> Unit,
+    onImport: (Uri) -> Unit,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val addFeed by viewModel.addFeed.collectAsStateWithLifecycle()
+    var menuOpen by remember { mutableStateOf(false) }
+    val importPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(onImport) }
+    val exportPicker = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/x-opml")) { uri ->
+        uri?.let(viewModel::export)
+    }
     val snackbar = remember { SnackbarHostState() }
     val resources = LocalResources.current
     var pendingDelete by remember { mutableStateOf<FeedRowUi?>(null) }
@@ -98,6 +112,8 @@ fun HomeScreen(
                 is HomeMessage.FeedDeleted -> snackbar.showSnackbar(resources.getString(R.string.feed_deleted, message.title))
                 is HomeMessage.Subscribed -> snackbar.showSnackbar(resources.getString(R.string.add_feed_subscribed, message.title))
                 HomeMessage.AlreadySubscribed -> snackbar.showSnackbar(resources.getString(R.string.add_feed_already))
+                is HomeMessage.Exported -> snackbar.showSnackbar(resources.getQuantityString(R.plurals.export_done, message.count, message.count))
+                HomeMessage.ExportFailed -> snackbar.showSnackbar(resources.getString(R.string.export_failed))
             }
         }
     }
@@ -122,16 +138,50 @@ fun HomeScreen(
                         IconButton(onClick = onSearch) {
                             Icon(painterResource(R.drawable.ic_search), contentDescription = stringResource(R.string.action_search))
                         }
+                        Box {
+                            IconButton(onClick = { menuOpen = true }) {
+                                Icon(painterResource(R.drawable.ic_more_vert), contentDescription = stringResource(R.string.action_more))
+                            }
+                            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.opml_import)) },
+                                    leadingIcon = { Icon(painterResource(R.drawable.ic_download), contentDescription = null) },
+                                    onClick = {
+                                        menuOpen = false
+                                        importPicker.launch(OPML_PICKER_TYPES)
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.opml_export)) },
+                                    leadingIcon = { Icon(painterResource(R.drawable.ic_upload), contentDescription = null) },
+                                    onClick = {
+                                        menuOpen = false
+                                        exportPicker.launch("Ares-${LocalDate.now()}.opml")
+                                    },
+                                )
+                            }
+                        }
                     },
                 )
-                if (state.refreshing) {
+                val importing = state.importing
+                if (importing != null) {
+                    LinearProgressIndicator(
+                        progress = { if (importing.total == 0) 0f else importing.done.toFloat() / importing.total },
+                        modifier = Modifier.fillMaxWidth().testTag("import-progress"),
+                    )
+                    Text(
+                        stringResource(R.string.importing_progress, importing.done, importing.total),
+                        style = MaterialTheme.typography.labelMedium,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                    )
+                } else if (state.refreshing) {
                     LinearProgressIndicator(Modifier.fillMaxWidth().testTag("refresh-progress"))
                 }
             }
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                onClick = viewModel::showAddFeed,
+                onClick = onAddFeed,
                 icon = { Icon(painterResource(R.drawable.ic_add), contentDescription = null) },
                 text = { Text(stringResource(R.string.action_add_feed)) },
             )
@@ -175,14 +225,8 @@ fun HomeScreen(
         )
     }
 
-    if (addFeed != AddFeedState.Hidden) {
-        AddFeedDialog(
-            state = addFeed,
-            onUrlChange = viewModel::onAddFeedUrlChanged,
-            onSubmit = viewModel::submitAddFeed,
-            onChoose = viewModel::chooseCandidate,
-            onDismiss = viewModel::dismissAddFeed,
-        )
+    state.importSummary?.let { summary ->
+        ImportSummaryDialog(summary, onDismiss = viewModel::dismissImportSummary)
     }
 }
 
@@ -389,5 +433,33 @@ private fun UnreadCount(count: Int) {
         count.toString(),
         style = MaterialTheme.typography.labelLarge,
         modifier = Modifier.semantics { contentDescription = description },
+    )
+}
+
+private val OPML_PICKER_TYPES = arrayOf("text/x-opml", "application/x-opml", "text/xml", "application/xml", "application/octet-stream")
+
+@Composable
+private fun ImportSummaryDialog(summary: ImportSummary, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.import_summary_title)) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(pluralStringResource(R.plurals.import_summary_imported, summary.imported, summary.imported))
+                if (summary.alreadySubscribed > 0) {
+                    Text(pluralStringResource(R.plurals.import_summary_already, summary.alreadySubscribed, summary.alreadySubscribed))
+                }
+                if (summary.failures.isNotEmpty()) {
+                    Text(pluralStringResource(R.plurals.import_summary_failed, summary.failures.size, summary.failures.size))
+                    summary.failures.forEach { failure ->
+                        Text(
+                            "\u2022 ${failure.title ?: failure.url}: ${failureMessage(failure.failure)}",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_ok)) } },
     )
 }

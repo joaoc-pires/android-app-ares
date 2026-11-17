@@ -22,6 +22,8 @@ import java.time.Instant
 
 internal data class ExistingEntry(val id: String, val firstSeenAt: Instant)
 
+public data class ExportedFeed(val url: String, val title: String, val siteUrl: String?, val section: String?)
+
 internal data class FilterScanRow(val rowId: Long, val id: String, val title: String?, val contentText: String?)
 
 internal data class EntryContentUpdate(
@@ -80,6 +82,15 @@ internal interface FeedDao {
 
     @Query("SELECT * FROM feeds WHERE id = :id")
     suspend fun byId(id: Long): FeedEntity?
+
+    @Query(
+        """
+        SELECT f.url, COALESCE(f.customTitle, f.title, f.url) AS title, f.siteUrl, s.name AS section
+        FROM feeds f LEFT JOIN sections s ON s.id = f.sectionId
+        ORDER BY COALESCE(f.customTitle, f.title, f.url) COLLATE NOCASE
+        """,
+    )
+    suspend fun exportList(): List<ExportedFeed>
 
     @Query("SELECT * FROM feeds WHERE url = :url LIMIT 1")
     suspend fun byUrl(url: String): FeedEntity?
