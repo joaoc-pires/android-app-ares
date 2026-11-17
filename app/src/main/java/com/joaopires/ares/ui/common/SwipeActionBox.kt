@@ -15,7 +15,10 @@ import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -33,19 +36,24 @@ fun SwipeActionBox(
 ) {
     val state = rememberSwipeToDismissBoxState()
     val scope = rememberCoroutineScope()
+    val currentStartToEnd by rememberUpdatedState(startToEnd)
+    val currentEndToStart by rememberUpdatedState(endToStart)
+    val onDismiss: (SwipeToDismissBoxValue) -> Unit = remember(state, scope) {
+        { value ->
+            when (value) {
+                SwipeToDismissBoxValue.StartToEnd -> currentStartToEnd?.onAction?.invoke()
+                SwipeToDismissBoxValue.EndToStart -> currentEndToStart?.onAction?.invoke()
+                SwipeToDismissBoxValue.Settled -> Unit
+            }
+            scope.launch { state.reset() }
+        }
+    }
     SwipeToDismissBox(
         state = state,
         modifier = modifier,
         enableDismissFromStartToEnd = startToEnd != null,
         enableDismissFromEndToStart = endToStart != null,
-        onDismiss = { value ->
-            when (value) {
-                SwipeToDismissBoxValue.StartToEnd -> startToEnd?.onAction?.invoke()
-                SwipeToDismissBoxValue.EndToStart -> endToStart?.onAction?.invoke()
-                SwipeToDismissBoxValue.Settled -> Unit
-            }
-            scope.launch { state.reset() }
-        },
+        onDismiss = onDismiss,
         backgroundContent = {
             val action = when (state.dismissDirection) {
                 SwipeToDismissBoxValue.StartToEnd -> startToEnd

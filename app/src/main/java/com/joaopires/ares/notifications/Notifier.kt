@@ -61,13 +61,18 @@ class Notifier(private val context: Context, private val entries: EntryRepositor
     }
 
     fun cancel(entryIds: Collection<String>) {
-        entryIds.forEach { manager.cancel(it, ENTRY_NOTIFICATION_ID) }
-        if (activeEntryIds().isEmpty()) manager.cancel(SUMMARY_TAG, SUMMARY_NOTIFICATION_ID)
+        val active = manager.activeNotifications
+        val shown = active.filter { it.id == ENTRY_NOTIFICATION_ID }.mapNotNullTo(HashSet()) { it.tag }
+        val toCancel = entryIds.filter { it in shown }
+        toCancel.forEach { manager.cancel(it, ENTRY_NOTIFICATION_ID) }
+        val summaryShown = active.any { it.id == SUMMARY_NOTIFICATION_ID && it.tag == SUMMARY_TAG }
+        if (summaryShown && (shown - toCancel.toSet()).isEmpty()) manager.cancel(SUMMARY_TAG, SUMMARY_NOTIFICATION_ID)
     }
 
     fun cancelAll() {
-        cancel(activeEntryIds())
-        manager.cancel(SUMMARY_TAG, SUMMARY_NOTIFICATION_ID)
+        val active = manager.activeNotifications
+        active.filter { it.id == ENTRY_NOTIFICATION_ID }.mapNotNull { it.tag }.forEach { manager.cancel(it, ENTRY_NOTIFICATION_ID) }
+        if (active.any { it.id == SUMMARY_NOTIFICATION_ID && it.tag == SUMMARY_TAG }) manager.cancel(SUMMARY_TAG, SUMMARY_NOTIFICATION_ID)
     }
 
     suspend fun removeMissing() {
