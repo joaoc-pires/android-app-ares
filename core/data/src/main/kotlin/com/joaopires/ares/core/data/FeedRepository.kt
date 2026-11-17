@@ -31,7 +31,11 @@ public sealed interface SaveSectionResult {
     public data object NotFound : SaveSectionResult
 }
 
-public class FeedRepository(private val db: AresDatabase, private val clock: Clock) {
+public class FeedRepository(
+    private val db: AresDatabase,
+    private val clock: Clock,
+    private val events: EntryEvents = EntryEvents(),
+) {
 
     public val feeds: Flow<List<FeedSummary>> = db.feedDao().observeSummaries()
 
@@ -59,6 +63,7 @@ public class FeedRepository(private val db: AresDatabase, private val clock: Clo
             lastFetchedAt = now,
             lastSuccessAt = now,
             createdAt = now,
+            notify = true,
         )
         val id = db.feedDao().insert(entity)
         SubscribeResult.Subscribed(id, writeEntries(db, entity.copy(id = id), feed.entries, now))
@@ -91,6 +96,14 @@ public class FeedRepository(private val db: AresDatabase, private val clock: Clo
         UpdateFeedResult.Saved
     }
 
+    public suspend fun setNotify(feedId: Long, notify: Boolean) {
+        db.feedDao().setNotify(feedId, notify)
+    }
+
+    public suspend fun setNotifyForAll(notify: Boolean) {
+        db.feedDao().setNotifyForAll(notify)
+    }
+
     public suspend fun reactivate(feedId: Long) {
         db.withTransaction {
             val feed = db.feedDao().byId(feedId) ?: return@withTransaction
@@ -105,6 +118,7 @@ public class FeedRepository(private val db: AresDatabase, private val clock: Clo
             db.entryDao().deleteUnbookmarked(feedId)
             db.feedDao().delete(feedId)
         }
+        events.emit(EntryEvent.Removed)
     }
 
     public suspend fun exportList(): List<ExportedFeed> = db.feedDao().exportList()

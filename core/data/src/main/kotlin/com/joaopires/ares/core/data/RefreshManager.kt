@@ -49,10 +49,10 @@ public class RefreshManager(
 
     public val progress: StateFlow<RefreshProgress> = progressState.asStateFlow()
 
-    public suspend fun refreshAll(force: Boolean = true): RefreshSummary = running.withLock {
+    public suspend fun refreshAll(force: Boolean = true, olderThan: Duration = minInterval): RefreshSummary = running.withLock {
         val now = clock.instant()
         val feeds = db.feedDao().all().filter { feed ->
-            feed.status == FeedStatus.Active && (force || feed.lastFetchedAt?.let { Duration.between(it, now) >= minInterval } != false)
+            feed.status == FeedStatus.Active && (force || feed.lastFetchedAt?.let { Duration.between(it, now) >= olderThan } != false)
         }
         try {
             progressState.value = RefreshProgress.Running(0, feeds.size)

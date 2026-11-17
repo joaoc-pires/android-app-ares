@@ -51,6 +51,9 @@ data object LicencesRoute
 data object LogsRoute
 
 @Serializable
+data object NotificationsRoute
+
+@Serializable
 data class SearchRoute(val kind: ScopeKind, val id: Long = 0, val title: String = "")
 
 fun scopeOf(kind: ScopeKind, id: Long): EntryScope = when (kind) {

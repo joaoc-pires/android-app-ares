@@ -29,7 +29,11 @@ private const val SQL_BATCH = 500
 private const val COUNTS_REFRESH_MILLIS = 60_000L
 private val TOMBSTONE_LIFETIME: Duration = Duration.ofDays(365)
 
-public class EntryRepository(private val db: AresDatabase, private val clock: Clock) {
+public class EntryRepository(
+    private val db: AresDatabase,
+    private val clock: Clock,
+    private val events: EntryEvents = EntryEvents(),
+) {
 
     public fun entries(query: EntryQuery): Flow<PagingData<EntryListItem>> =
         Pager(PagingConfig(pageSize = PAGE_SIZE, enablePlaceholders = false)) {
@@ -51,7 +55,11 @@ public class EntryRepository(private val db: AresDatabase, private val clock: Cl
 
     public suspend fun setRead(entryId: String, read: Boolean) {
         db.entryDao().setRead(entryId, read)
+        if (read) events.emit(EntryEvent.MarkedRead(listOf(entryId)))
     }
+
+    public suspend fun existingIds(entryIds: Collection<String>): Set<String> =
+        entryIds.chunked(SQL_BATCH).flatMapTo(HashSet()) { db.entryDao().existingIds(it) }
 
     public suspend fun setBookmarked(entryId: String, bookmarked: Boolean) {
         db.withTransaction {
@@ -71,7 +79,7 @@ public class EntryRepository(private val db: AresDatabase, private val clock: Cl
         }
         ids.chunked(SQL_BATCH).forEach { dao.setReadMany(it, true) }
         ids
-    }
+    }.also { ids -> if (ids.isNotEmpty()) events.emit(EntryEvent.MarkedRead(ids)) }
 
     public suspend fun markUnread(entryIds: List<String>) {
         db.withTransaction { entryIds.chunked(SQL_BATCH).forEach { db.entryDao().setReadMany(it, false) } }
@@ -83,7 +91,7 @@ public class EntryRepository(private val db: AresDatabase, private val clock: Cl
         val deleted = db.entryDao().deleteAllUnbookmarked()
         db.feedDao().resetValidators()
         deleted
-    }
+    }.also { events.emit(EntryEvent.Removed) }
 }
 
 internal fun todayStart(now: Instant): Instant = now.minusSeconds(TODAY_HOURS * 3600)

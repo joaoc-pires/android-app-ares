@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -31,6 +32,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -47,6 +49,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -84,6 +87,7 @@ fun FeedSettingsScreen(viewModel: FeedSettingsViewModel, clock: Clock, onBack: (
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     val form by viewModel.form.collectAsStateWithLifecycle()
     val sections by viewModel.sections.collectAsStateWithLifecycle()
+    val notificationsEnabled by viewModel.notificationsEnabled.collectAsStateWithLifecycle()
     var confirmDelete by remember { mutableStateOf(false) }
 
     LaunchedEffect(viewModel) { viewModel.events.collect { if (it == ManageEvent.Deleted) onDeleted() else onBack() } }
@@ -138,6 +142,16 @@ fun FeedSettingsScreen(viewModel: FeedSettingsViewModel, clock: Clock, onBack: (
                 modifier = Modifier.fillMaxWidth().testTag("feed-settings-url"),
             )
             SectionDropdown(sections, current.sectionId, viewModel::onSectionChange)
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.feed_settings_notifications)) },
+                supportingContent = if (notificationsEnabled) null else {
+                    { Text(stringResource(R.string.feed_settings_notifications_disabled)) }
+                },
+                trailingContent = { Switch(checked = current.notify && notificationsEnabled, onCheckedChange = null, enabled = notificationsEnabled) },
+                modifier = Modifier
+                    .toggleable(value = current.notify, enabled = notificationsEnabled, role = Role.Switch, onValueChange = viewModel::onNotifyChange)
+                    .testTag("feed-settings-notify"),
+            )
 
             HorizontalDivider()
             val status = when {

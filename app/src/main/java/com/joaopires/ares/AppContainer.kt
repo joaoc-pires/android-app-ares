@@ -4,11 +4,13 @@ package com.joaopires.ares
 
 import android.content.Context
 import android.util.Xml
+import androidx.work.WorkManager
 import coil3.ImageLoader
 import coil3.disk.DiskCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.crossfade
 import com.joaopires.ares.core.data.ArticleRepository
+import com.joaopires.ares.core.data.EntryEvents
 import com.joaopires.ares.core.data.EntryRepository
 import com.joaopires.ares.core.data.FeedClientSource
 import com.joaopires.ares.core.data.FeedImporter
@@ -21,12 +23,16 @@ import com.joaopires.ares.core.data.SettingsRepository
 import com.joaopires.ares.core.data.db.AresDatabase
 import com.joaopires.ares.core.feed.FeedClient
 import com.joaopires.ares.core.feed.FeedClientConfig
+import com.joaopires.ares.notifications.BackgroundRefreshScheduler
+import com.joaopires.ares.notifications.Notifier
 import com.joaopires.ares.ui.images.AresImageInterceptor
 import com.joaopires.ares.ui.opml.ImportController
 import com.joaopires.ares.ui.opml.OpmlService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okio.Path.Companion.toOkioPath
@@ -69,9 +75,30 @@ class AppContainer(
 
     val feedSource: FeedSource by lazy { createFeedSource(feedClient) }
 
-    val feeds: FeedRepository by lazy { FeedRepository(database, clock) }
+    val entryEvents: EntryEvents = EntryEvents()
 
-    val entries: EntryRepository by lazy { EntryRepository(database, clock) }
+    val feeds: FeedRepository by lazy { FeedRepository(database, clock, entryEvents) }
+
+    val entries: EntryRepository by lazy { EntryRepository(database, clock, entryEvents) }
+
+    val notifier: Notifier by lazy { Notifier(appContext, entries) }
+
+    val workManager: WorkManager by lazy { WorkManager.getInstance(appContext) }
+
+    val backgroundRefresh: BackgroundRefreshScheduler by lazy { BackgroundRefreshScheduler { workManager } }
+
+    fun startBackgroundWork() {
+        notifier.ensureChannel()
+        notifier.listen(applicationScope, entryEvents)
+        applicationScope.launch {
+            settings.settings.map { it.backgroundRefreshMinutes }.distinctUntilChanged().collect(backgroundRefresh::apply)
+        }
+        applicationScope.launch {
+            settings.settings.map { it.notificationsEnabled }.distinctUntilChanged().collect { enabled ->
+                if (!enabled) notifier.cancelAll()
+            }
+        }
+    }
 
     val filters: FilterRepository by lazy { FilterRepository(database) }
 

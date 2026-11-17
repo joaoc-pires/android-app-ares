@@ -24,9 +24,16 @@ import java.io.File
 import java.nio.file.Files
 import java.time.Clock
 import java.time.Instant
+import java.time.ZoneId
 import java.time.ZoneOffset
 
 val NOW: Instant = Instant.parse("2026-11-16T12:00:00Z")
+
+class TestClock(var now: Instant = NOW) : Clock() {
+    override fun getZone(): ZoneId = ZoneOffset.UTC
+    override fun withZone(zone: ZoneId?): Clock = this
+    override fun instant(): Instant = now
+}
 
 class FakeFeedSource(
     var onFetch: suspend (String) -> FetchOutcome = { FetchOutcome.NotModified(null) },
@@ -44,7 +51,7 @@ class FakeFeedSource(
 }
 
 @OptIn(DelicateCoilApi::class)
-fun testContainer(source: FakeFeedSource = FakeFeedSource()): AppContainer {
+fun testContainer(source: FakeFeedSource = FakeFeedSource(), clock: Clock = Clock.fixed(NOW, ZoneOffset.UTC)): AppContainer {
     val context = ApplicationProvider.getApplicationContext<Context>()
     SingletonImageLoader.setUnsafe(
         ImageLoader.Builder(context).components { add(NoImages) }.build(),
@@ -58,7 +65,7 @@ fun testContainer(source: FakeFeedSource = FakeFeedSource()): AppContainer {
         createFeedSource = { source },
         settingsFile = settingsFile,
         logDirectory = Files.createTempDirectory("ares-log").toFile(),
-        clock = Clock.fixed(NOW, ZoneOffset.UTC),
+        clock = clock,
     )
 }
 

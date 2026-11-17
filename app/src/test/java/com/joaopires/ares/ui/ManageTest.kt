@@ -16,6 +16,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ApplicationProvider
@@ -85,7 +86,7 @@ class ManageViewModelTest {
     }
 
     private suspend fun feedSettings(feedId: Long) =
-        FeedSettingsViewModel(feedId, container.feeds, container.feedSource, container.refresh).also { viewModel ->
+        FeedSettingsViewModel(feedId, container.feeds, container.feedSource, container.refresh, container.settings).also { viewModel ->
             withTimeout(WAIT) { viewModel.form.first { it != null } }
         }
 
@@ -273,7 +274,7 @@ class ManageScreenTest {
     @Test
     fun feedSettingsShowsTheFeedAndConfirmsDeletion() {
         val id = runBlocking { container.subscribe(feed("https://a.example/feed", title = "Alpha")) }
-        val viewModel = owned { FeedSettingsViewModel(id, container.feeds, container.feedSource, container.refresh) }
+        val viewModel = owned { FeedSettingsViewModel(id, container.feeds, container.feedSource, container.refresh, container.settings) }
         var deleted = false
         compose.setContent {
             CompositionLocalProvider(LocalAppContainer provides container) {
@@ -283,7 +284,7 @@ class ManageScreenTest {
         compose.waitUntil(WAIT) { compose.onAllNodesWithText("https://a.example/feed").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText(context.getString(R.string.feed_settings_title_default, "Alpha")).assertExists()
         compose.onNodeWithTag("feed-settings-status").assertTextContains(context.getString(R.string.feed_settings_last_updated, ""), substring = true)
-        compose.onNodeWithTag("feed-settings-delete").performClick()
+        compose.onNodeWithTag("feed-settings-delete").performScrollTo().performClick()
         compose.onNodeWithText(context.getString(R.string.action_delete)).performClick()
         compose.waitUntil(WAIT) { deleted }
     }

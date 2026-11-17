@@ -86,11 +86,17 @@ internal interface FeedDao {
 
     @Query(
         """
-        SELECT id, url, title, customTitle, siteUrl, iconUrl, sectionId, status, lastSuccessAt, lastError
+        SELECT id, url, title, customTitle, siteUrl, iconUrl, sectionId, notify, status, lastSuccessAt, lastError
         FROM feeds WHERE id = :id
         """,
     )
     fun observeSettings(id: Long): Flow<FeedSettings?>
+
+    @Query("UPDATE feeds SET notify = :notify WHERE id = :id")
+    suspend fun setNotify(id: Long, notify: Boolean)
+
+    @Query("UPDATE feeds SET notify = :notify")
+    suspend fun setNotifyForAll(notify: Boolean)
 
     @Query("SELECT id FROM feeds WHERE sectionId = :sectionId")
     suspend fun idsInSection(sectionId: Long): List<Long>
@@ -226,6 +232,9 @@ internal interface EntryDao {
         """,
     )
     suspend fun tombstoneExpired(cutoff: Instant, now: Instant)
+
+    @Query("SELECT id FROM entries WHERE id IN (:ids)")
+    suspend fun existingIds(ids: List<String>): List<String>
 
     @Query("DELETE FROM entries WHERE isRead = 1 AND isBookmarked = 0 AND sortDate < :cutoff")
     suspend fun deleteExpired(cutoff: Instant): Int

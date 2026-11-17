@@ -46,6 +46,7 @@ import com.joaopires.ares.ui.navigation.HomeRoute
 import com.joaopires.ares.ui.navigation.ImportRoute
 import com.joaopires.ares.ui.navigation.LicencesRoute
 import com.joaopires.ares.ui.navigation.LogsRoute
+import com.joaopires.ares.ui.navigation.NotificationsRoute
 import com.joaopires.ares.ui.navigation.NEW_SECTION
 import com.joaopires.ares.ui.navigation.ScopeKind
 import com.joaopires.ares.ui.navigation.SearchRoute
@@ -61,6 +62,8 @@ import com.joaopires.ares.ui.settings.LicencesScreen
 import com.joaopires.ares.ui.settings.LicencesViewModel
 import com.joaopires.ares.ui.settings.LogsScreen
 import com.joaopires.ares.ui.settings.LogsViewModel
+import com.joaopires.ares.ui.settings.NotificationsScreen
+import com.joaopires.ares.ui.settings.NotificationsViewModel
 import com.joaopires.ares.ui.settings.SettingsNavigation
 import com.joaopires.ares.ui.settings.SettingsScreen
 import com.joaopires.ares.ui.settings.SettingsViewModel
@@ -80,6 +83,7 @@ fun AresApp(incoming: IncomingLink? = null, onIncomingHandled: () -> Unit = {}) 
         when (incoming) {
             is IncomingLink.AddFeed -> navController.navigate(AddFeedRoute(incoming.url, autoPreview = true)) { launchSingleTop = true }
             is IncomingLink.ImportOpml -> navController.navigate(ImportRoute(incoming.uri)) { launchSingleTop = true }
+            is IncomingLink.OpenEntry -> navController.navigate(EntryRoute(incoming.entryId)) { launchSingleTop = true }
             null -> return@LaunchedEffect
         }
         onIncomingHandled()
@@ -145,6 +149,7 @@ fun AresApp(incoming: IncomingLink? = null, onIncomingHandled: () -> Unit = {}) 
                     onImport = { uri -> navController.navigate(ImportRoute(uri.toString())) },
                     onLicences = { navController.navigate(LicencesRoute) },
                     onLogs = { navController.navigate(LogsRoute) },
+                    onNotifications = { navController.navigate(NotificationsRoute) },
                 ),
             )
         }
@@ -162,13 +167,17 @@ fun AresApp(incoming: IncomingLink? = null, onIncomingHandled: () -> Unit = {}) 
             }
             LicencesScreen(viewModel = viewModel, onBack = { navController.popBackStack() })
         }
+        composable<NotificationsRoute> {
+            val viewModel = viewModel { NotificationsViewModel(container.settings, container.feeds) }
+            NotificationsScreen(viewModel = viewModel, onBack = { navController.popBackStack() })
+        }
         composable<LogsRoute> {
             val viewModel = viewModel { LogsViewModel(container.eventLog, shareDirectory) }
             LogsScreen(viewModel = viewModel, onBack = { navController.popBackStack() })
         }
         composable<FeedSettingsRoute> { entry ->
             val route = entry.toRoute<FeedSettingsRoute>()
-            val viewModel = viewModel { FeedSettingsViewModel(route.feedId, container.feeds, container.feedSource, container.refresh) }
+            val viewModel = viewModel { FeedSettingsViewModel(route.feedId, container.feeds, container.feedSource, container.refresh, container.settings) }
             FeedSettingsScreen(
                 viewModel = viewModel,
                 clock = container.clock,

@@ -29,6 +29,7 @@ public data class FeedSettings(
     val siteUrl: String?,
     val iconUrl: String?,
     val sectionId: Long?,
+    val notify: Boolean,
     val status: FeedStatus,
     val lastSuccessAt: Instant?,
     val lastError: String?,

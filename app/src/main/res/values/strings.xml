@@ -260,4 +260,40 @@
 
     <string name="licences_title">Open-source licences</string>
     <string name="licences_intro">Ares is built with these open-source libraries. Tap one to read its licence.</string>
+
+    <string name="settings_background_refresh">Refresh in background</string>
+    <string name="background_refresh_off">Off</string>
+    <string name="background_refresh_30">Every 30 minutes</string>
+    <string name="background_refresh_60">Every hour</string>
+    <string name="background_refresh_180">Every 3 hours</string>
+    <string name="background_refresh_360">Every 6 hours</string>
+    <string name="settings_background_refresh_note">Android decides the exact time, and waits for a connection and enough battery.</string>
+
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_notifications_on">On</string>
+    <string name="settings_notifications_off">Off</string>
+    <string name="notifications_title">Notifications</string>
+    <string name="notifications_switch">Notify about new entries</string>
+    <string name="notifications_explanation">After a background refresh, Ares shows new entries from the feeds you choose below. Refreshing inside the app never sends notifications.</string>
+    <string name="notifications_blocked">Notifications are blocked for Ares in system settings.</string>
+    <string name="notifications_open_system_settings">Open system settings</string>
+    <string name="notifications_feeds">Feeds</string>
+    <string name="notifications_all_on">Turn on for all</string>
+    <string name="notifications_all_off">Turn off for all</string>
+    <string name="notifications_no_feeds">Add feeds to choose which ones notify you.</string>
+    <string name="feed_settings_notifications">Notifications</string>
+    <string name="feed_settings_notifications_disabled">Turn on notifications in Settings first.</string>
+
+    <string name="notification_channel_new_entries">New entries</string>
+    <string name="notification_channel_new_entries_description">New entries found during a background refresh</string>
+    <string name="notification_summary_title">New entries</string>
+    <string name="notification_summary">%1$s from %2$s</string>
+    <plurals name="notification_summary_entries">
+        <item quantity="one">%d new entry</item>
+        <item quantity="other">%d new entries</item>
+    </plurals>
+    <plurals name="notification_summary_feeds">
+        <item quantity="one">%d feed</item>
+        <item quantity="other">%d feeds</item>
+    </plurals>
 </resources>

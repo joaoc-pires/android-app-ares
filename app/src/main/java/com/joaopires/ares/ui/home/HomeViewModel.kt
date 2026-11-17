@@ -23,6 +23,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.Duration
+
+private val REFRESH_ON_OPEN_AFTER: Duration = Duration.ofMinutes(15)
 
 data class FeedRowUi(
     val id: Long,
@@ -93,6 +96,10 @@ class HomeViewModel(
 
     private val messageChannel = Channel<HomeMessage>(Channel.BUFFERED)
     val messages: Flow<HomeMessage> = messageChannel.receiveAsFlow()
+
+    init {
+        viewModelScope.launch { refresh.refreshAll(force = false, olderThan = REFRESH_ON_OPEN_AFTER) }
+    }
 
     fun refresh() {
         viewModelScope.launch {

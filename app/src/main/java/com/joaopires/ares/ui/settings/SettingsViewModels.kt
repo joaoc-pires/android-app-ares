@@ -31,6 +31,8 @@ import java.io.File
 
 val RETENTION_CHOICES: List<Int?> = listOf(30, 90, 180, 365, null)
 
+val BACKGROUND_REFRESH_CHOICES: List<Int?> = listOf(null, 30, 60, 180, 360)
+
 sealed interface SettingsMessage {
     data class RetentionApplied(val count: Int) : SettingsMessage
     data class CacheDeleted(val count: Int) : SettingsMessage
@@ -67,6 +69,8 @@ class SettingsViewModel(
     fun setLoadYouTubeImages(enabled: Boolean) = change { it.copy(loadYouTubeImages = enabled) }
 
     fun setHideUnreadMarkers(enabled: Boolean) = change { it.copy(hideUnreadMarkers = enabled) }
+
+    fun setBackgroundRefresh(minutes: Int?) = change { it.copy(backgroundRefreshMinutes = minutes) }
 
     fun setRetention(days: Int?) {
         viewModelScope.launch {

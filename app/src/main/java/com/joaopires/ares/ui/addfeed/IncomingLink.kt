@@ -3,11 +3,13 @@
 package com.joaopires.ares.ui.addfeed
 
 import android.content.Intent
+import com.joaopires.ares.notifications.ACTION_OPEN_ENTRY
 import java.net.URI
 
 sealed interface IncomingLink {
     data class AddFeed(val url: String) : IncomingLink
     data class ImportOpml(val uri: String) : IncomingLink
+    data class OpenEntry(val entryId: String) : IncomingLink
 }
 
 val FEED_MIME_TYPES = setOf("application/rss+xml", "application/atom+xml", "application/feed+json")
@@ -18,7 +20,8 @@ private val urlInText = Regex("""(?i)\b(?:feeds?:(?:https?:)?//|https?://)[^\s<>
 fun firstUrlIn(text: String): String? =
     urlInText.find(text)?.value?.trimEnd('.', ',', ';', ':', '!', '?', ')', ']', '}', '>')
 
-fun incomingLink(action: String?, data: String?, type: String?, text: String?, stream: String?): IncomingLink? {
+fun incomingLink(action: String?, data: String?, type: String?, text: String?, stream: String?, entryId: String? = null): IncomingLink? {
+    if (action == ACTION_OPEN_ENTRY) return entryId?.takeIf { it.isNotBlank() }?.let(IncomingLink::OpenEntry)
     val mime = type?.lowercase()?.substringBefore(';')?.trim()
     return when (action) {
         Intent.ACTION_SEND -> when {

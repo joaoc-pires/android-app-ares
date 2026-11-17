@@ -9,6 +9,7 @@ import com.joaopires.ares.core.data.FeedSource
 import com.joaopires.ares.core.data.FilterRepository
 import com.joaopires.ares.core.data.RefreshManager
 import com.joaopires.ares.core.data.SaveSectionResult
+import com.joaopires.ares.core.data.SettingsRepository
 import com.joaopires.ares.core.data.UpdateFeedResult
 import com.joaopires.ares.core.data.model.FeedSettings
 import com.joaopires.ares.core.data.model.Filter
@@ -25,6 +26,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -40,6 +42,7 @@ data class FeedSettingsForm(
     val title: String = "",
     val url: String = "",
     val sectionId: Long? = null,
+    val notify: Boolean = true,
     val saving: Boolean = false,
     val error: FeedSettingsError? = null,
 )
@@ -51,7 +54,11 @@ class FeedSettingsViewModel(
     private val feeds: FeedRepository,
     private val source: FeedSource,
     private val refresh: RefreshManager,
+    appSettings: SettingsRepository,
 ) : ViewModel() {
+
+    val notificationsEnabled: StateFlow<Boolean> = appSettings.settings.map { it.notificationsEnabled }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     val settings: StateFlow<FeedSettings?> = feeds.feedSettings(feedId).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
     val sections: StateFlow<List<Section>> = feeds.sections.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -65,13 +72,15 @@ class FeedSettingsViewModel(
     init {
         viewModelScope.launch {
             val initial = settings.first { it != null } ?: return@launch
-            formState.value = FeedSettingsForm(initial.customTitle.orEmpty(), initial.url, initial.sectionId)
+            formState.value = FeedSettingsForm(initial.customTitle.orEmpty(), initial.url, initial.sectionId, initial.notify)
         }
     }
 
     fun onTitleChange(value: String) = formState.update { it?.copy(title = value) }
 
     fun onUrlChange(value: String) = formState.update { it?.copy(url = value, error = null) }
+
+    fun onNotifyChange(value: Boolean) = formState.update { it?.copy(notify = value) }
 
     fun onSectionChange(value: Long?) = formState.update { it?.copy(sectionId = value) }
 
@@ -106,7 +115,7 @@ class FeedSettingsViewModel(
                 is Verified.Failed -> return FeedSettingsError.Fetch(verified.failure)
             }
         }
-        return when (feeds.updateFeed(feedId, form.title, finalUrl, form.sectionId)) {
+        return when (feeds.updateFeed(feedId, form.title, finalUrl, form.sectionId, form.notify)) {
             UpdateFeedResult.Saved -> null.also { eventChannel.send(ManageEvent.Saved) }
             UpdateFeedResult.UrlTaken -> FeedSettingsError.UrlTaken
             UpdateFeedResult.NotFound -> null.also { eventChannel.send(ManageEvent.Deleted) }

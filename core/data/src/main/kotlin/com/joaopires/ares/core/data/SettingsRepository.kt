@@ -28,10 +28,12 @@ public data class AppSettings(
     val notificationsEnabled: Boolean = false,
     val loadYouTubeImages: Boolean = true,
     val retentionDays: Int? = DEFAULT_RETENTION_DAYS,
+    val backgroundRefreshMinutes: Int? = DEFAULT_BACKGROUND_REFRESH_MINUTES,
 ) {
     public companion object {
         public const val DEFAULT_ACCENT: String = "Pink"
         public const val DEFAULT_RETENTION_DAYS: Int = 90
+        public const val DEFAULT_BACKGROUND_REFRESH_MINUTES: Int = 60
     }
 }
 
@@ -52,6 +54,7 @@ public class SettingsRepository internal constructor(private val store: DataStor
             preferences[NOTIFICATIONS] = next.notificationsEnabled
             preferences[YOUTUBE_IMAGES] = next.loadYouTubeImages
             preferences[RETENTION_DAYS] = next.retentionDays ?: NEVER
+            preferences[BACKGROUND_REFRESH] = next.backgroundRefreshMinutes ?: NEVER
         }
     }
 
@@ -70,6 +73,11 @@ public class SettingsRepository internal constructor(private val store: DataStor
                 NEVER -> null
                 else -> days
             },
+            backgroundRefreshMinutes = when (val minutes = this[BACKGROUND_REFRESH]) {
+                null -> defaults.backgroundRefreshMinutes
+                NEVER -> null
+                else -> minutes
+            },
         )
     }
 
@@ -83,6 +91,7 @@ public class SettingsRepository internal constructor(private val store: DataStor
         private val NOTIFICATIONS = booleanPreferencesKey("notifications_enabled")
         private val YOUTUBE_IMAGES = booleanPreferencesKey("load_youtube_images")
         private val RETENTION_DAYS = intPreferencesKey("retention_days")
+        private val BACKGROUND_REFRESH = intPreferencesKey("background_refresh_minutes")
 
         public fun create(file: File, scope: CoroutineScope): SettingsRepository =
             SettingsRepository(PreferenceDataStoreFactory.create(scope = scope, produceFile = { file }))

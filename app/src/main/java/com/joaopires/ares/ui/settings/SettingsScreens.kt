@@ -104,6 +104,7 @@ class SettingsNavigation(
     val onImport: (Uri) -> Unit,
     val onLicences: () -> Unit,
     val onLogs: () -> Unit,
+    val onNotifications: () -> Unit,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -160,12 +161,21 @@ private fun <T> ChoiceDialog(
     selected: T,
     onSelect: (T) -> Unit,
     onDismiss: () -> Unit,
+    note: String? = null,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
             Column(Modifier.selectableGroup()) {
+                note?.let {
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
+                }
                 choices.forEach { (value, label) ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -207,6 +217,16 @@ fun retentionLabel(days: Int?): String = when (days) {
 }
 
 @Composable
+fun backgroundRefreshLabel(minutes: Int?): String = when (minutes) {
+    null -> stringResource(R.string.background_refresh_off)
+    30 -> stringResource(R.string.background_refresh_30)
+    60 -> stringResource(R.string.background_refresh_60)
+    180 -> stringResource(R.string.background_refresh_180)
+    360 -> stringResource(R.string.background_refresh_360)
+    else -> minutes.toString()
+}
+
+@Composable
 fun themeLabel(mode: ThemeModeSetting): String = stringResource(
     when (mode) {
         ThemeModeSetting.System -> R.string.theme_system
@@ -234,7 +254,7 @@ fun AppSettings.accentColor(): AccentColor = AccentColor.entries.firstOrNull { i
 
 val supportsDynamicColor: Boolean get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
-private enum class SettingsDialog { Opener, Retention, DeleteCache, Feedback }
+private enum class SettingsDialog { Opener, BackgroundRefresh, Retention, DeleteCache, Feedback }
 
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel, navigation: SettingsNavigation) {
@@ -290,6 +310,13 @@ fun SettingsScreen(viewModel: SettingsViewModel, navigation: SettingsNavigation)
                 }
             }
             item {
+                SettingRow(
+                    stringResource(R.string.settings_background_refresh),
+                    backgroundRefreshLabel(current.backgroundRefreshMinutes),
+                    tag = "settings-background-refresh",
+                ) { dialog = SettingsDialog.BackgroundRefresh }
+            }
+            item {
                 SwitchRow(
                     stringResource(R.string.settings_youtube_images),
                     current.loadYouTubeImages,
@@ -308,6 +335,14 @@ fun SettingsScreen(viewModel: SettingsViewModel, navigation: SettingsNavigation)
             }
 
             item { GroupHeader(stringResource(R.string.settings_group_feeds)) }
+            item {
+                SettingRow(
+                    stringResource(R.string.settings_notifications),
+                    stringResource(if (current.notificationsEnabled) R.string.settings_notifications_on else R.string.settings_notifications_off),
+                    tag = "settings-notifications",
+                    onClick = navigation.onNotifications,
+                )
+            }
             item { SettingRow(stringResource(R.string.action_filters), tag = "settings-filters", onClick = navigation.onFilters) }
             item { SettingRow(stringResource(R.string.opml_import)) { importPicker.launch(OPML_PICKER_TYPES) } }
             item { SettingRow(stringResource(R.string.opml_export)) { exportPicker.launch("Ares-${LocalDate.now()}.opml") } }
@@ -355,6 +390,14 @@ fun SettingsScreen(viewModel: SettingsViewModel, navigation: SettingsNavigation)
                 selected = current.articleOpener,
                 onSelect = viewModel::setOpener,
                 onDismiss = { dialog = null },
+            )
+            SettingsDialog.BackgroundRefresh -> ChoiceDialog(
+                title = stringResource(R.string.settings_background_refresh),
+                choices = BACKGROUND_REFRESH_CHOICES.map { it to backgroundRefreshLabel(it) },
+                selected = current.backgroundRefreshMinutes,
+                onSelect = viewModel::setBackgroundRefresh,
+                onDismiss = { dialog = null },
+                note = stringResource(R.string.settings_background_refresh_note),
             )
             SettingsDialog.Retention -> ChoiceDialog(
                 title = stringResource(R.string.settings_retention),

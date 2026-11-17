@@ -268,7 +268,7 @@ class SettingsScreenTest {
         show {
             SettingsScreen(
                 viewModel,
-                SettingsNavigation(onBack = {}, onAppearance = {}, onFilters = { filtersOpened = true }, onImport = {}, onLicences = {}, onLogs = {}),
+                SettingsNavigation(onBack = {}, onAppearance = {}, onFilters = { filtersOpened = true }, onImport = {}, onLicences = {}, onLogs = {}, onNotifications = {}),
             )
         }
         compose.waitUntil(WAIT) { compose.onAllNodesWithTag("settings-opener").fetchSemanticsNodes().isNotEmpty() }

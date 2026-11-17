@@ -15,6 +15,7 @@ import androidx.core.content.IntentCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.joaopires.ares.core.data.AppSettings
 import com.joaopires.ares.core.data.ThemeModeSetting
+import com.joaopires.ares.notifications.EXTRA_ENTRY_ID
 import com.joaopires.ares.ui.AresApp
 import com.joaopires.ares.ui.addfeed.IncomingLink
 import com.joaopires.ares.ui.addfeed.incomingLink
@@ -54,6 +55,7 @@ private fun Intent.toIncomingLink(): IncomingLink? = incomingLink(
     type = type,
     text = getStringExtra(Intent.EXTRA_TEXT),
     stream = IntentCompat.getParcelableExtra(this, Intent.EXTRA_STREAM, Uri::class.java)?.toString(),
+    entryId = getStringExtra(EXTRA_ENTRY_ID),
 )
 
 @Composable
