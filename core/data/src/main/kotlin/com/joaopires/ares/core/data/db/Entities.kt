@@ -77,6 +77,7 @@ public data class EntryEntity(
     val isBookmarked: Boolean = false,
     val feedTitleSnapshot: String? = null,
     val feedIconSnapshot: String? = null,
+    val fullContentHtml: String? = null,
 )
 
 @Fts4(contentEntity = EntryEntity::class)

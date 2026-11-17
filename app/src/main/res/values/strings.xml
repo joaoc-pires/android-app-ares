@@ -69,4 +69,15 @@
     <string name="error_gone">This feed no longer exists.</string>
     <string name="error_invalid_url">Enter a valid web address.</string>
     <string name="feed_error_indicator">Last refresh failed: %1$s</string>
+
+    <string name="action_share">Share</string>
+    <string name="action_open_original">Open original</string>
+    <string name="action_full_article">Load full article</string>
+    <string name="action_feed_content">Show feed content</string>
+    <string name="entry_marked_unread">Marked as unread</string>
+    <string name="full_article_not_extractable">The full article could not be extracted from this page.</string>
+    <string name="full_article_no_link">This entry has no link to an article.</string>
+    <string name="full_article_failed">Could not load the full article. %1$s</string>
+    <string name="watch_video">Watch video</string>
+    <string name="attachments_title">Attachments</string>
 </resources>

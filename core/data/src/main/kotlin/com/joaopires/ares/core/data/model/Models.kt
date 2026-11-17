@@ -47,6 +47,7 @@ public data class EntryDetail(
     val title: String?,
     val author: String?,
     val contentHtml: String?,
+    val fullContentHtml: String?,
     val publishedAt: Instant?,
     val sortDate: Instant,
     val thumbnailUrl: String?,

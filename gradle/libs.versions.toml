@@ -23,6 +23,9 @@ turbine = "1.2.1"
 navigation = "2.10.2"
 coil = "3.6.3"
 espresso = "3.7.0"
+browser = "1.10.0"
+readability4j = "1.0.8"
+slf4j = "2.0.20"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -62,6 +65,11 @@ androidx-paging-testing = { group = "androidx.paging", name = "paging-testing", 
 androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-test-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }
+androidx-browser = { group = "androidx.browser", name = "browser", version.ref = "browser" }
+androidx-room-testing = { group = "androidx.room", name = "room-testing", version.ref = "room" }
+readability4j = { group = "net.dankito.readability4j", name = "readability4j", version.ref = "readability4j" }
+slf4j-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4j" }
+slf4j-nop = { group = "org.slf4j", name = "slf4j-nop", version.ref = "slf4j" }
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
 coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
 

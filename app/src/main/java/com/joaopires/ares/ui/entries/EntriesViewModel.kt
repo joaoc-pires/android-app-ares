@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import com.joaopires.ares.core.data.ArticleOpener
 import com.joaopires.ares.core.data.EntryRepository
 import com.joaopires.ares.core.data.RefreshManager
 import com.joaopires.ares.core.data.RefreshProgress
@@ -51,6 +52,9 @@ class EntriesViewModel(
 
     val hideUnread: StateFlow<Boolean> = settings.settings.map { it.hideUnreadMarkers }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    val articleOpener: StateFlow<ArticleOpener> = settings.settings.map { it.articleOpener }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ArticleOpener.AresReader)
 
     private val refreshingFeed = MutableStateFlow(false)
     val refreshing: StateFlow<Boolean> = combine(refresh.progress, refreshingFeed) { progress, feed ->

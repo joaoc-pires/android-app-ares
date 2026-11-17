@@ -14,6 +14,7 @@ import coil3.request.ImageResult
 import com.joaopires.ares.core.data.FeedSource
 import com.joaopires.ares.core.data.SubscribeResult
 import com.joaopires.ares.core.data.db.AresDatabase
+import com.joaopires.ares.core.feed.ArticleOutcome
 import com.joaopires.ares.core.feed.DiscoveryOutcome
 import com.joaopires.ares.core.feed.Entry
 import com.joaopires.ares.core.feed.Feed
@@ -30,9 +31,16 @@ val NOW: Instant = Instant.parse("2026-11-16T12:00:00Z")
 class FakeFeedSource(
     var onFetch: suspend (String) -> FetchOutcome = { FetchOutcome.NotModified(null) },
     var onDiscover: suspend (String) -> DiscoveryOutcome = { DiscoveryOutcome.NothingFound },
+    var onFetchArticle: suspend (String) -> ArticleOutcome = { ArticleOutcome.NotExtractable },
 ) : FeedSource {
+    val articleRequests = mutableListOf<String>()
+
     override suspend fun fetch(url: String, validators: Validators?, feedKey: String): FetchOutcome = onFetch(url)
     override suspend fun discover(url: String): DiscoveryOutcome = onDiscover(url)
+    override suspend fun fetchArticle(url: String): ArticleOutcome {
+        articleRequests += url
+        return onFetchArticle(url)
+    }
 }
 
 @OptIn(DelicateCoilApi::class)

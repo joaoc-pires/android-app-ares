@@ -128,7 +128,7 @@ class ScreenTest {
         val viewModel = EntriesViewModel(EntryScope.Feed(id), container.entries, container.settings, container.refresh)
         compose.setContent {
             CompositionLocalProvider(LocalAppContainer provides container) {
-                AresTheme { EntriesScreen(viewModel, title = "Alpha", clock = container.clock, onBack = {}, onSearch = {}) }
+                AresTheme { EntriesScreen(viewModel, title = "Alpha", clock = container.clock, onBack = {}, onSearch = {}, onOpenEntry = {}) }
             }
         }
         waitForText("First post")

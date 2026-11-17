@@ -10,6 +10,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.joaopires.ares.R
+import com.joaopires.ares.ui.article.EntryScreen
+import com.joaopires.ares.ui.article.EntryViewModel
 import com.joaopires.ares.ui.common.LocalAppContainer
 import com.joaopires.ares.ui.entries.EntriesScreen
 import com.joaopires.ares.ui.entries.EntriesViewModel
@@ -17,6 +19,7 @@ import com.joaopires.ares.ui.home.HomeDestination
 import com.joaopires.ares.ui.home.HomeScreen
 import com.joaopires.ares.ui.home.HomeViewModel
 import com.joaopires.ares.ui.navigation.EntriesRoute
+import com.joaopires.ares.ui.navigation.EntryRoute
 import com.joaopires.ares.ui.navigation.HomeRoute
 import com.joaopires.ares.ui.navigation.ScopeKind
 import com.joaopires.ares.ui.navigation.SearchRoute
@@ -64,6 +67,7 @@ fun AresApp() {
                 clock = container.clock,
                 onBack = { navController.popBackStack() },
                 onSearch = { navController.navigate(SearchRoute(route.kind, route.id, route.title)) },
+                onOpenEntry = { navController.navigate(EntryRoute(it)) },
             )
         }
         composable<SearchRoute> { entry ->
@@ -74,6 +78,16 @@ fun AresApp() {
                 scopeTitle = route.title.ifEmpty { null },
                 clock = container.clock,
                 onBack = { navController.popBackStack() },
+                onOpenEntry = { navController.navigate(EntryRoute(it)) },
+            )
+        }
+        composable<EntryRoute> { entry ->
+            val route = entry.toRoute<EntryRoute>()
+            val viewModel = viewModel { EntryViewModel(route.entryId, container.entries, container.articles, container.settings) }
+            EntryScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() },
+                onOpenEntry = { navController.navigate(EntryRoute(it)) },
             )
         }
     }

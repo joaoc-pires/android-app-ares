@@ -16,6 +16,9 @@ data object HomeRoute
 data class EntriesRoute(val kind: ScopeKind, val id: Long = 0, val title: String = "")
 
 @Serializable
+data class EntryRoute(val entryId: String)
+
+@Serializable
 data class SearchRoute(val kind: ScopeKind, val id: Long = 0, val title: String = "")
 
 fun scopeOf(kind: ScopeKind, id: Long): EntryScope = when (kind) {

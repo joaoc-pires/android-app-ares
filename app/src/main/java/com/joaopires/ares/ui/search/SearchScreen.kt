@@ -10,6 +10,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -26,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -34,14 +36,22 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.joaopires.ares.R
-import com.joaopires.ares.ui.common.openInBrowser
+import com.joaopires.ares.ui.common.openEntryItem
 import com.joaopires.ares.ui.entries.EntryList
 import kotlinx.coroutines.launch
 import java.time.Clock
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SearchScreen(viewModel: SearchViewModel, scopeTitle: String?, clock: Clock, onBack: () -> Unit) {
+fun SearchScreen(
+    viewModel: SearchViewModel,
+    scopeTitle: String?,
+    clock: Clock,
+    onBack: () -> Unit,
+    onOpenEntry: (String) -> Unit,
+) {
+    val opener by viewModel.articleOpener.collectAsStateWithLifecycle()
+    val toolbarColor = MaterialTheme.colorScheme.surface.toArgb()
     val query by viewModel.query.collectAsStateWithLifecycle()
     val hideUnread by viewModel.hideUnread.collectAsStateWithLifecycle()
     val results = viewModel.results.collectAsLazyPagingItems()
@@ -100,8 +110,14 @@ fun SearchScreen(viewModel: SearchViewModel, scopeTitle: String?, clock: Clock, 
                     hideUnread = hideUnread,
                     clock = clock,
                     onOpen = { item ->
-                        viewModel.markOpened(item)
-                        val opened = item.url?.let { openInBrowser(context, it) } ?: false
+                        val opened = openEntryItem(
+                            context = context,
+                            url = item.url,
+                            opener = opener,
+                            toolbarColor = toolbarColor,
+                            onOpenInReader = { onOpenEntry(item.id) },
+                            onOpenedOutside = { viewModel.markOpened(item) },
+                        )
                         if (!opened) scope.launch { snackbar.showSnackbar(noBrowser) }
                     },
                     onToggleRead = viewModel::toggleRead,

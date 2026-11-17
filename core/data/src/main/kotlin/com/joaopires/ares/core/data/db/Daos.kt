@@ -119,7 +119,7 @@ internal interface EntryDao {
 
     @Query(
         """
-        SELECT e.id, e.feedId, e.url, e.title, e.author, e.contentHtml, e.publishedAt, e.sortDate, e.thumbnailUrl, e.videoId,
+        SELECT e.id, e.feedId, e.url, e.title, e.author, e.contentHtml, e.fullContentHtml, e.publishedAt, e.sortDate, e.thumbnailUrl, e.videoId,
                e.isRead, e.isBookmarked,
                COALESCE(f.customTitle, f.title, e.feedTitleSnapshot) AS feedTitle,
                COALESCE(f.iconUrl, e.feedIconSnapshot) AS feedIconUrl,
@@ -129,6 +129,15 @@ internal interface EntryDao {
         """,
     )
     fun observeDetail(id: String): Flow<EntryDetail?>
+
+    @Query("SELECT url FROM entries WHERE id = :id")
+    suspend fun urlOf(id: String): String?
+
+    @Query("UPDATE entries SET fullContentHtml = :html WHERE id = :id")
+    suspend fun setFullContent(id: String, html: String)
+
+    @Query("SELECT id FROM entries WHERE url IN (:urls) LIMIT 1")
+    suspend fun idForUrl(urls: List<String>): String?
 
     @Query("SELECT url, type, length FROM enclosures WHERE entryId = :entryId ORDER BY id")
     fun observeEnclosures(entryId: String): Flow<List<EntryEnclosure>>

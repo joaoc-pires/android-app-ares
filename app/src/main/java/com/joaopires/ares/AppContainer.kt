@@ -8,6 +8,7 @@ import coil3.ImageLoader
 import coil3.disk.DiskCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.crossfade
+import com.joaopires.ares.core.data.ArticleRepository
 import com.joaopires.ares.core.data.EntryRepository
 import com.joaopires.ares.core.data.FeedClientSource
 import com.joaopires.ares.core.data.FeedRepository
@@ -64,6 +65,8 @@ class AppContainer(
     val entries: EntryRepository by lazy { EntryRepository(database, clock) }
 
     val filters: FilterRepository by lazy { FilterRepository(database) }
+
+    val articles: ArticleRepository by lazy { ArticleRepository(database, feedSource) }
 
     val refresh: RefreshManager by lazy { RefreshManager(database, feedSource, settings, clock) }
 

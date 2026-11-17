@@ -10,6 +10,7 @@ import com.joaopires.ares.core.data.db.AresDatabase
 import com.joaopires.ares.core.data.db.buildEntryQuery
 import com.joaopires.ares.core.data.model.EntryListItem
 import com.joaopires.ares.core.data.model.EntryQuery
+import com.joaopires.ares.core.feed.ArticleOutcome
 import com.joaopires.ares.core.feed.DiscoveryOutcome
 import com.joaopires.ares.core.feed.Entry
 import com.joaopires.ares.core.feed.Feed
@@ -90,4 +91,8 @@ internal class FakeFeedSource(private val respond: suspend (url: String, validat
     }
 
     override suspend fun discover(url: String): DiscoveryOutcome = DiscoveryOutcome.NothingFound
+
+    var onFetchArticle: suspend (String) -> ArticleOutcome = { ArticleOutcome.NotExtractable }
+
+    override suspend fun fetchArticle(url: String): ArticleOutcome = onFetchArticle(url)
 }

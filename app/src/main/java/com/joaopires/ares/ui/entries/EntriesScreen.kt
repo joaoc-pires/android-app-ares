@@ -33,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
@@ -47,7 +48,7 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import com.joaopires.ares.R
 import com.joaopires.ares.core.data.model.EntryListItem
-import com.joaopires.ares.ui.common.openInBrowser
+import com.joaopires.ares.ui.common.openEntryItem
 import kotlinx.coroutines.launch
 import java.time.Clock
 
@@ -59,8 +60,11 @@ fun EntriesScreen(
     clock: Clock,
     onBack: () -> Unit,
     onSearch: () -> Unit,
+    onOpenEntry: (String) -> Unit,
 ) {
     val items = viewModel.items.collectAsLazyPagingItems()
+    val opener by viewModel.articleOpener.collectAsStateWithLifecycle()
+    val toolbarColor = MaterialTheme.colorScheme.surface.toArgb()
     val unreadOnly by viewModel.unreadOnly.collectAsStateWithLifecycle()
     val hideUnread by viewModel.hideUnread.collectAsStateWithLifecycle()
     val refreshing by viewModel.refreshing.collectAsStateWithLifecycle()
@@ -130,8 +134,14 @@ fun EntriesScreen(
                 hideUnread = hideUnread,
                 clock = clock,
                 onOpen = { item ->
-                    viewModel.markOpened(item)
-                    val opened = item.url?.let { openInBrowser(context, it) } ?: false
+                    val opened = openEntryItem(
+                        context = context,
+                        url = item.url,
+                        opener = opener,
+                        toolbarColor = toolbarColor,
+                        onOpenInReader = { onOpenEntry(item.id) },
+                        onOpenedOutside = { viewModel.markOpened(item) },
+                    )
                     if (!opened) scope.launch { snackbar.showSnackbar(noBrowser) }
                 },
                 onToggleRead = viewModel::toggleRead,

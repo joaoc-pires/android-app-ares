@@ -89,6 +89,18 @@ public class FeedClient internal constructor(
         return DiscoveryOutcome.NothingFound
     }
 
+    public suspend fun fetchArticle(url: String): ArticleOutcome =
+        when (val download = download(url, null)) {
+            is Download.Failed -> ArticleOutcome.Failed(download.failure)
+            Download.Gone -> ArticleOutcome.Failed(FetchFailure.Http(410))
+            is Download.NotModified -> ArticleOutcome.NotExtractable
+            is Download.Body -> withContext(Dispatchers.Default) {
+                extractArticle(decodeText(download.bytes, download.charset), download.finalUrl)
+                    ?.let { ArticleOutcome.Extracted(it) }
+                    ?: ArticleOutcome.NotExtractable
+            }
+        }
+
     private fun discoverLinks(download: Download.Body): List<DiscoveredFeed> {
         val document = Jsoup.parse(decodeText(download.bytes, download.charset), download.finalUrl)
         return document.select("link[rel~=(?i)alternate][href]")
