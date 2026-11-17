@@ -16,8 +16,8 @@ android {
         applicationId = "com.joaopires.ares"
         minSdk = 29
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 20261117
+        versionName = "1.0.0"
     }
 
     buildTypes {
